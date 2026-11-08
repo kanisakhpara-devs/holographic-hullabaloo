@@ -38,7 +38,7 @@ What I picked
 - I guess the next spin's length by averaging the last 4 spins.
 - The magnet sits just before where the face starts, so any timing drift ends up on the hair at the back where nobody notices.
 
-What that works out to
+What that works out to 
 - One spin takes 1 / 25 = 40 ms.
 - Each column is 360 / 200 = 1.8 degrees.
 - The sensor moves at 2 x pi x 0.015 x 25 = about 2.36 m/s.
