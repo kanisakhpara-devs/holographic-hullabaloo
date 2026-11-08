@@ -52,7 +52,41 @@ Does it work?
 - Jitter: I want it under a quarter column (50 us). The hardware timestamp is accurate to about 12.5 ns. Way under.
 - Pulse length: 2.5 ms is way longer than a 200 us column, so the edge is clean. Yes.
 - Speed stability: the motor has to stay within 0.25 percent between spins. Not sorted yet, that's section 3.
-
+  
 ## 3. Mechanics
+
+### What I picked
+- Rotor is a U frame made of aluminium: a bottom plate on the motor, the blade post 50 mm out, a counter post on the other side, and a top bar joining the two posts
+- Blade PCB is bolted to a 10 x 10 x 1 mm aluminium angle with M2 screws, nylon washers and Kapton tape in between (no straps, they creep)
+- All the aluminium is matte dark grey or black (black anodised, or self-etching primer plus matte black spray)
+- The LiPo sits on the counter post at the same height as the middle of the blade, so it doubles as the counterweight
+- Trim weights are M3 screws and washers on the counter side
+- Hub PCB sits on standoffs on the bottom plate and carries no load; the ESP32-S3 antenna sticks out past the metal with about 15 mm clear around it
+- Motor is a 12 V brushed DC motor with ball bearings, about 3000 RPM with no load, 5 mm shaft, rigid flange coupling under 22 mm across
+- Base ESP32 drives the motor with PWM through a logic level MOSFET and a flyback diode
+- The rotor sends its spin time to the base over ESP-NOW every spin, and the base runs a PI loop to hold 25 rev/s
+- No 3D printed parts (for now)
+
+### What that works out to
+- Spin speed: 2 x pi x 25 = about 157 rad/s
+- Pull at 50 mm: 157 x 157 x 0.05 = about 1230 m/s^2, which is about 126 g
+- Tip speed: 157 x 0.05 = about 7.9 m/s
+- Blade mass: PCB about 5 g + aluminium angle about 8 g = about 13 g
+- Force on the blade: 0.013 x 1230 = about 16 N
+- Bare PCB blade would bend about 5 mm held at both ends, about 47 mm held only at the bottom
+- With the aluminium angle in the U frame: about 0.05 mm
+- Balance: 13 g x 50 mm = about 650 g mm, so the counter side needs about 650 g mm at the same height
+- Leftover imbalance target: under 20 g mm, which is about 0.5 N on the motor bearing
+- Whole rotor: about 70 g, about 0.7 J stored when spinning
+- Rotor sweep is about 104 mm, so the cover is about 125 mm across and about 190 mm tall above the base
+- Motor runs at about half its no load speed, so the PI loop has room to push
+
+### Does it work?
+- Bending: yes, 0.05 mm is nothing and the LED solder joints won't flex
+- Balance: yes once it's trimmed; spin up slowly and add washers until the shaking stops
+- Speed: the PI loop plus the rotor's own inertia should hold 0.25 percent spin to spin, but I'll only know for sure when I check the hall pulse on the scope
+- Paint: adds almost no weight; paint before balancing, and keep the Kapton because paint isn't a reliable insulator
+- Safety: 7.9 m/s and 0.7 J is low, and the cover catches anything that comes loose
+- Still to pick: exact motor and coupling part numbers (step 2)
 ## 4. Power
 ## 5. Wireless
