@@ -156,3 +156,44 @@ Status: Frozen Nov 9 2026
 - Still open: coil module rating, boost and charger chips, motor current, all decided when picking parts
 
 ## 5. Wireless
+Status: Frozen Nov 9 2026
+
+### What I picked
+- Laptop to base: USB serial at 115200 baud through the base dev board's USB chip
+- Base to rotor and back: ESP-NOW on one fixed Wi-Fi channel, no router, no venue Wi-Fi
+- Every packet starts with a magic byte, a version byte, a type byte and a sequence number; serial packets also get a length byte and a CRC-8 because USB serial has no checksum of its own (ESP-NOW already has one)
+- Commands always carry the whole state (mode, emotion, mouth level 0 to 4, look angle, brightness), never "change X by Y", so one lost packet gets fixed by the next one
+- Sequence numbers let the rotor throw away old or repeated packets
+- Laptop sends a command whenever something changes, mouth levels at 25 per second while talking (one per frame, faster is pointless), and a heartbeat with the full state 5 times a second
+- The rotor sends a status packet once every spin: spin time, battery voltage, whether the coil is powering it
+- The base sends the laptop button presses, both distance sensor readings, the rotor's battery and whether the link is up
+- The base and rotor only accept packets from each other's MAC address, and ESP-NOW encryption is on, because other people at the faire might be using ESP-NOW too
+- On boot the base scans for the quietest channel out of 1, 6 and 11 and uses it; the rotor tries channels until it hears the base's heartbeat
+- The laptop sends each mouth level about 50 ms before its bit of audio plays, so the mouth lines up with the sound; the exact lead gets tuned by filming it
+- Failsafes: no command for 1 s and the rotor goes back to its own idle animations (blinking, looking around); no laptop for 2 s and the base tells the rotor to go idle, and walking up still wakes it because the distance sensors are on the base
+- No rotor status for 0.5 s and the base holds its last motor PWM; nothing for 10 s and it spins down and tells the laptop
+- The motor PWM has a hard cap so even with no feedback it can't go past about 28 rev/s
+- Rotor firmware gets flashed over the hub's USB-C with the rotor stopped
+
+### What that works out to
+- Command packet: 4 header bytes + about 6 bytes of state = about 10 bytes
+- Rotor status packet: 4 header bytes + 4 (spin time) + 2 (battery) + 1 (flags) = about 11 bytes
+- Serial: about 30 packets a second x about 12 bytes = about 360 bytes/s, and 115200 baud carries about 11,500 bytes/s, so about 30x headroom
+- Radio: about 30 packets a second down and 25 up, so about 55 packets a second
+- Each ESP-NOW packet takes about 1 ms of air time at the default 1 Mbit/s, including the reply, so about 5.5 percent of the air
+- Base to rotor distance is about 5 to 10 cm, so the signal is strong even while the aluminium spins past
+- Latency, laptop to face: serial about 1 to 5 ms, radio about 1 to 3 ms (up to about 20 ms if it has to retry), then up to 40 ms waiting for the next spin to swap in the new frame
+- That's about 25 to 45 ms normally, about 65 ms at worst
+- Lip sync: people notice a mouth trailing the sound by more than about 45 ms, so sending mouth levels 50 ms early covers the worst case
+
+### Does it work?
+- Latency: 65 ms at worst against a 100 ms target. Yes.
+- Bandwidth: serial and radio are both barely used. Yes.
+- Lost packets: every packet carries the full state and there's a heartbeat 5 times a second, so a lost packet is fixed within 200 ms at most. Yes.
+- Speed control without the radio: the rotor's inertia holds it within 0.25 percent spin to spin and the rotor measures every spin anyway, so the face stays steady; the PI loop only keeps the average at 25 rev/s. Yes.
+- Overspeed: capped in the base firmware, so a dead link can't double the speed.
+- Crowded 2.4 GHz at the faire: quietest channel at boot, retries, and a 5 percent air time load. It should hold up, but I'll test it next to a busy Wi-Fi network before the faire.
+- Timing: the radio runs on core 0, the column timer and LED DMA on core 1, so radio traffic can't shift the columns.
+- Motor noise: 100 nF caps across the motor terminals and from each terminal to the motor case keep brush noise out of the base.
+- Coil: it runs at a few hundred kHz, nowhere near 2.4 GHz, so it doesn't bother the radio.
+- Base enclosure: the top panel can't be metal, because the rotor's antenna talks to the base through it.
