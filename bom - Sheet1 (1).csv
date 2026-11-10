@@ -1,0 +1,32 @@
+,Item,Part number,Qty,Unit price (USD),Total (USD),Total (INR),link,notes
+1,Wireless power TX/RX coil pair (XKT-412 type),Robu SKU R271735,1,6.16,6.16,579,https://robu.in/product/5v-2a-wireless-power-supply-transmitter-pair-charging-coil-module/,"Rs 579 incl GST. 12V in, 5V rated 2A (clones may give less, test early). Coils 43 mm OD, 20 mm ID"
+2,"1S LiPo 1500 mAh, PCM protected",WLY103048,1,3.07,3.07,289,https://robu.in/product/1500mah-pcm-protected-micro-li-po-battery/,Rs 289. 10 x 30 x 48 mm. Check the connector (need JST-PH or re-terminate)
+3,VL53L0X ToF distance sensor,GY-530,2,2.22,4.44,418,https://robu.in/product/unsoldered-purple-gy-530-vl53l0x-time-of-flight-tof-laser-ranging-sensor-module/,Rs 209 each. Has XSHUT pin for setting addresses
+4,12V to 5V buck module (base power),MP1584EN fixed 5V module,1,1.05,1.05,99,https://robu.in/product/mp1584en-power-step-down-adjustable-module/,"Rs 99. Fixed 5V output, 3A"
+5,"Rigid flange coupling, 5 mm bore",CALANDIS B0BLZFZ8S8,1,5.88,5.88,553,https://www.amazon.in/dp/B0BLZFZ8S8,Rs 553. Check flange diameter is 22 mm or less
+6,Neodymium magnet 6 x 3 mm (pack of 60),Vinabo B0B5RGXYQM,1,3.18,3.18,299,https://www.amazon.in/dp/B0B5RGXYQM,Rs 299. Grade not stated; Hall sensor has about 5x margin even with N35
+7,12V 3A wall adapter,FEDUS B0G4B3F33K,1,5.56,5.56,523,https://www.amazon.in/dp/B0G4B3F33K,Rs 523
+8,"Polycarbonate sheet 1 mm, 12 x 12 in (pack of 4)",BIGIMALL B07RXB8WD3,1,7.44,7.44,699,https://www.amazon.in/dp/B07RXB8WD3,"Rs 699. No 125 mm polycarbonate tube sold in India (only acrylic, which shatters). Roll 2 sheets into the cover"
+9,"12V brushed DC motor, 775, ball bearings",YUTH 775 B0CSKDVQ9N,1,3.56,3.56,335,https://www.amazon.in/dp/B0CSKDVQ9N,"Rs 335. Rated 12-36V, 3500-9000 RPM, so about 3000-3500 RPM no load at 12V. Verify 5 mm shaft. Big stall current: soft start, MOSFET sized for stall"
+10,M2 x 8 mm socket head bolt + nut (12 pcs),EasyMech M2x8 set,1,2.33,2.33,219,https://robu.in/product/easymech-set-m2-x-8mm-socket-head-cap-allen-bolt-nut-12-pcs/,Rs 219. Blade PCBs onto the aluminium angles
+11,"M3 x 15 mm bolt, nut and washer set (20 pcs)",EasyMech M3x15 CHHD set,1,0.83,0.83,78,https://robu.in/product/easymech-m3-x-15mm-chhd-bolt-nut-and-washer-set-20-pcs/,Rs 78. Frame joints and trim weights (washers)
+12,M3 x 15 mm male-female nylon standoffs (10 pcs),Robu M3x15 M-F nylon spacer,1,0.87,0.87,82,https://robu.in/product/m315mm-male-to-female-nylon-hex-spacer-10pcs/,Rs 82. Hub hangs under the bottom bar; nylon keeps metal away from the coil
+13,Nylon flat washer kit M2-M10 (500 pcs),Serplex B0HG124TVF,1,5.6,5.6,526,https://www.amazon.in/dp/B0HG124TVF,Rs 526. M2 nylon washers between blade PCB and screws; no smaller pack found
+14,Kapton tape 10 mm x 33 m,Robocraze B07GTKXGLC,1,2.86,2.86,269,https://www.amazon.in/dp/B07GTKXGLC,Rs 269. Insulates blade PCBs from the aluminium
+15,"Epoxy primer spray, grey, 400 ml",APAR B0F536RNLS,1,3.18,3.18,299,https://www.amazon.in/dp/B0F536RNLS,Rs 299. Scuff and degrease the aluminium first. A true self-etching primer (Rust-Oleum) is Rs 1759
+16,"Matt black spray paint, 400 ml",Nippon Pylox B0F8B65S86,1,1.8,1.8,169,https://www.amazon.in/dp/B0F8B65S86,Rs 169. Rotor frame finish
+17,"PETG+ filament 1.75 mm, 1 kg, black",NFIL3D B0F8VWB73L,1,8.78,8.78,825,https://www.amazon.in/dp/B0F8VWB73L,"Rs 825. Base, motor mount, magnet pocket, cover caps"
+18,"26AWG silicone wire, red (per metre)",Robu 26AWG ultra flexible red,3,0.18,0.54,51,https://robu.in/product/high-quality-ultra-flexible-26awg-silicone-wire-1000m-red/,"Rs 17, check it is per metre. Other colours out of stock; mark data and clock wires with tape"
+19,"26AWG silicone wire, black (per metre)",Robu 26AWG ultra flexible black,3,0.18,0.54,51,https://robu.in/product/high-quality-ultra-flexible-26awg-silicone-wire-1000m-black/,"Rs 17, check it is per metre. Other colours out of stock; mark data and clock wires with tape"
+20,"DC jack, panel mount, 2.1 x 5.5 mm (5 pcs)",Robu 2.1x5.5 panel jack,1,0.31,0.31,29,https://robu.in/product/2-1x5-5mm-dc-power-jack-dc-socket-panel-mount/,Rs 29. Check the adapter plug is 2.1 x 5.5 mm
+21,"Talk button, 16 mm momentary, black",R13-507,1,0.31,0.31,29,https://robu.in/product/black-r13-507-16mm-2pin-momentary-self-reset-round-cap-push-button-switch/,Rs 29
+22,"Cable ties 100 x 2.5 mm, black (100 pcs)",Robustt B0HCBGP3VW,1,1.22,1.22,115,https://www.amazon.in/dp/B0HCBGP3VW,Rs 115. Tying blade wires to the bar and posts
+23,"Aluminium flat bar 25 x 3 mm, 1 m length",Generic 6063 aluminium flat,1,4.26,4.26,400,"Bought offline (local hardware shop, Mumbai)","Rs 400, a high estimate (shops sell by length, usually less). Bottom bar and top bar need about 300 mm; the rest covers cutting mistakes"
+24,"APA102-2020 RGB LEDs, 10-pack",Adafruit 3341 (DigiKey India),16,6.02,96.32,9054.4,https://www.digikey.in/en/products/detail/adafruit-industries-llc/3341/6578337,"Rs 565.90 per 10-pack, 658 in stock. 160 LEDs = 144 + 16 spares. JLC/LCSC had 0 stock. Hand soldered. DigiKey India delivers in about 4 days, free over Rs 7000. Blade footprint must match these exact LEDs (check Adafruit pinout)"
+25,"Hot air rework station, 858D",SCHOFIC 858D B07ZL27FJL,1,38.29,38.29,3599,https://www.amazon.in/dp/B07ZL27FJL,"Rs 3599. The 2020 LEDs have their pads underneath, so a soldering iron can't reach them. Robu's 858D stations are out of stock"
+26,"Solder paste Sn42/Bi58 T4, 30 g (lead free, 138 C)",Wonderway B0BLSJQPR6,1,19.41,19.41,1825,https://www.amazon.in/dp/B0BLSJQPR6,Rs 1825. Fine T4 grade for the tiny pads; low melting point is easy on the LEDs and the cheap hot air
+27,"No-clean flux paste, 10 ml syringe",B0H6BRXJXC,1,2.65,2.65,249,https://www.amazon.in/dp/B0H6BRXJXC,Rs 249. For reflow and fixing bridges
+28,ESD tweezers set (6 pcs),HASTHIP B0BDYG14V6,1,2.89,2.89,272,https://www.amazon.in/dp/B0BDYG14V6,Rs 272. Placing 2 x 2 mm LEDs
+29,"Aluminium angle 10 x 10 x 1 mm, 1 m length",Generic aluminium angle,1,4.26,4.26,400,"Bought offline (local hardware shop, Mumbai)","Rs 400, a high estimate. Two blade posts need about 400 mm; the rest covers cutting mistakes"
+30,SMT stencil for the blade PCB,JLCPCB stencil (with board order),1,7,7,658,https://jlcpcb.com/smt-stencil,"About $7, estimate. Same paste on all 864 LED pads; ordered together with the blade PCBs"
+,Total,,,,244.59,22993.4,,
