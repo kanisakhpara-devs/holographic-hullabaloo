@@ -1,13 +1,14 @@
 # Calculations
 
 ## 1. Display
-Status: Frozen Nov 8 2026, reworked Nov 9 2026 (2 blades, 2.2 mm pitch, parallel LED chains)
+Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, 2.5 mm pitch, parallel LED chains, Adafruit LEDs)
 
 ### What I picked
 - Two blades opposite each other, 50 mm from the axis. One blade at 25 spins/s flickers, two blades give 50 Hz and balance each other.
-- APA102-2020 LEDs. They have a separate clock line so they update way faster than WS2812, and they don't smear when spinning.
+- APA102-2020 LEDs (Adafruit 3341, which is the 8-pad APA102-2020-256-8). They have a separate clock line so they update way faster than WS2812, and they don't smear when spinning.
+- I hand solder them, because JLC and LCSC had none in stock.
 - 72 LEDs tall on each blade. Enough to show expressions properly.
-- 2.2 mm between LEDs. The LEDs are 2.0 mm wide, so 2.0 mm pitch would have them touching.
+- 2.5 mm between LEDs. The datasheet's recommended pads are 2.2 x 2.29 mm (wider than the 2.0 mm body), so anything tighter than about 2.5 mm makes neighbouring pads touch.
 - 200 columns per spin. More columns means sharper curves sideways, and it costs zero extra hardware.
 - 25 spins per second (1500 RPM).
 - Both blades show the same picture, blade 2 is just 100 columns ahead of blade 1.
@@ -16,9 +17,9 @@ Status: Frozen Nov 8 2026, reworked Nov 9 2026 (2 blades, 2.2 mm pitch, parallel
 - Brightness only uses the 8-bit colour values. The 5-bit global brightness stays at max (31) because it's a slow PWM that would chop each column into dashes.
 
 ### What that works out to
-- Height: 72 LEDs x 2.2 mm = about 158 mm tall.
+- Height: 72 LEDs x 2.5 mm = 180 mm tall.
 - Width: 50 mm x 2 = 100 mm across.
-- Each column is 2 x pi x 50 / 200 = about 1.57 mm wide, so a pixel is 2.2 mm tall by 1.57 mm wide.
+- Each column is 2 x pi x 50 / 200 = about 1.57 mm wide, so a pixel is 2.5 mm tall by 1.57 mm wide.
 - Each column gets 1 / (200 x 25) = 200 microseconds before the next one.
 - Every spot on the cylinder gets passed by a blade 2 x 25 = 50 times a second.
 - Each spot is only lit 2 x 200 us out of every 40 ms, so 1 percent of the time.
@@ -36,8 +37,8 @@ Status: Frozen Nov 8 2026, reworked Nov 9 2026 (2 blades, 2.2 mm pitch, parallel
 - RAM: two frame buffers are 86 KB plus about 2.4 KB of DMA buffers, and the ESP32-S3 has 512 KB. Easily.
 - Blade alignment: if blade 2 isn't exactly opposite, the face doubles up. 0.5 mm off is about 0.3 of a column, so the firmware gets an angle trim per blade and the blade mounts get slotted holes to line up the rows.
 - Frame swaps: the new frame swaps in at the index pulse, which is right before the face for blade 1 and exactly on the hair seam at the back for blade 2, so neither blade shows a tear.
-- Pitch: 0.2 mm gap between LEDs. Need to check JLC's minimum part spacing when picking parts.
-- Soldering: 2020s have their pads underneath, so they need JLC assembly or hot air, not a soldering iron.
+- Pitch: the LEDs sit with the 2.2 mm pad width along the blade, so there's a 0.3 mm copper gap between neighbours. Enough to hand solder without bridges.
+- Soldering: 2020s have their pads underneath, so a soldering iron can't do them. Stencil paste onto the whole blade, place all 72 LEDs, then reflow the whole blade in one hot air pass (the datasheet says reflow only once).
 
 ## 2. Position sensing
 Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (moved outside the coil, 35 mm)
@@ -77,12 +78,12 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (moved outside the coil, 35
 - Speed stability: the motor has to stay within 0.25 percent between spins. Section 3.
 
 ## 3. Mechanics
-Status: Frozen Nov 8 2026, reworked Nov 9 2026 (2 blades, battery on the axis, coil stack)
+Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, battery on the axis, coil stack, 180 mm blades)
 
 ### What I picked
 - Rotor is a U frame made of aluminium: a bottom bar on the motor, a blade post 50 mm out on each side, and a top bar joining the two posts
 - The bottom bar is about 25 mm wide (not a full disc), solid in the middle where the flange coupling bolts on, with one thin slot cut from the middle out to one side so eddy currents from the coil can't loop around in it
-- Each blade PCB (about 170 mm long, to fit the mounting holes and wire pads) is bolted to a 10 x 10 x 1 mm aluminium angle with M2 screws, nylon washers and Kapton tape in between (no straps, they creep), with slotted holes so the two blades can be lined up
+- Each blade PCB (about 190 mm long, to fit the mounting holes and wire pads) is bolted to a 10 x 10 x 1 mm aluminium angle with M2 screws, nylon washers and Kapton tape in between (no straps, they creep), with slotted holes so the two blades can be lined up
 - All the aluminium is matte dark grey or black (black anodised, or self-etching primer plus matte black spray)
 - The two blades balance each other; trim weights are M3 screws and washers, which also cancel the ESP32 module sitting off centre on the hub and the battery wires running down one post
 - The LiPo sits on top of the top bar, centred on the axis, so it adds no imbalance and feels almost no spinning force
@@ -100,24 +101,24 @@ Status: Frozen Nov 8 2026, reworked Nov 9 2026 (2 blades, battery on the axis, c
 - Spin speed: 2 x pi x 25 = about 157 rad/s
 - Pull at 50 mm: 157 x 157 x 0.05 = about 1230 m/s^2, which is about 126 g
 - Tip speed: 157 x 0.05 = about 7.9 m/s
-- Each blade: PCB about 5.5 g + aluminium angle about 8 g = about 14 g
-- Force on each blade: 0.014 x 1230 = about 17 N
-- With the aluminium angle in the U frame each blade bends about 0.07 mm
-- Balance: each blade is about 14 g x 50 mm = 700 g mm, and they cancel each other out
+- Each blade: PCB about 6 g + aluminium angle about 9 g (180 mm long) = about 15 g
+- Force on each blade: 0.015 x 1230 = about 18 N
+- With the aluminium angle in the U frame each blade bends about 0.12 mm
+- Balance: each blade is about 15 g x 50 mm = 750 g mm, and they cancel each other out
 - Leftover imbalance target: under 20 g mm, which is about 0.5 N on the motor bearing
 - Battery on the axis: a 25 g battery 1 mm off centre is already 25 g mm, so it has to sit within about 0.5 mm of the axis or get trimmed out
-- Whole rotor: about 110 g, about 1.4 J stored when spinning
-- Rotor sweep is about 104 mm, so the cover is about 125 mm across and about 220 mm tall above the base
+- Whole rotor: about 115 g, about 1.5 J stored when spinning
+- Rotor sweep is about 104 mm, so the cover is about 125 mm across and about 240 mm tall above the base
 - Motor runs at about half its no load speed, so the PI loop has room to push
 
 ### Does it work?
-- Bending: yes, 0.07 mm is nothing and the LED solder joints won't flex
+- Bending: yes, 0.12 mm is nothing and the LED solder joints won't flex
 - Balance: yes once it's trimmed; two matching blades start out close to balanced, then spin up slowly and add washers until the shaking stops
 - Coil: ferrite behind both coils, the hub 15 mm below the bar, and a slot in the bar so eddy currents can't circulate, so no real heating; the exact coil size comes from the coil I pick
 - Speed: the PI loop plus the rotor's own inertia should hold 0.25 percent spin to spin, but I'll only know for sure when I check the hall pulse on the scope
 - Paint: adds almost no weight; paint before balancing, and keep the Kapton because paint isn't a reliable insulator
-- Safety: 7.9 m/s and 1.4 J is low, the battery barely feels the spin, and the cover catches anything that comes loose
-- Still to pick: exact motor, coupling and coil part numbers (step 2)
+- Safety: 7.9 m/s and 1.5 J is low, the battery barely feels the spin, and the cover catches anything that comes loose
+- Parts picked: YUTH 775 motor (12 to 36 V, about 3000 to 3500 RPM at 12 V), 5 mm rigid flange coupling, XKT-412 type coil pair with 43 mm coils
 
 ## 4. Power
 Status: Frozen Nov 9 2026
@@ -161,7 +162,7 @@ Status: Frozen Nov 9 2026
 - Decoupling: a 0.1 uF cap next to every LED, on the front beside the LED column because the back is bolted to the angle; 10 uF every 18 LEDs, about 220 uF bulk at the hub
 - Power goes up each blade from the bottom on wide copper, under 30 mV drop
 - The battery is on the axis, so it barely feels the spin, and the switch slides vertically so nothing can flip it
-- Still open: coil module rating, boost and charger chips, motor current, all decided when picking parts
+- Still open: boost and charger chips (step 2), and bench testing how much current the coil pair really gives
 
 ## 5. Wireless
 Status: Frozen Nov 9 2026
