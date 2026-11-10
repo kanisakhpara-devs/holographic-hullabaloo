@@ -40,12 +40,12 @@ Status: Frozen Nov 8 2026, reworked Nov 9 2026 (2 blades, 2.2 mm pitch, parallel
 - Soldering: 2020s have their pads underneath, so they need JLC assembly or hot air, not a soldering iron.
 
 ## 2. Position sensing
-Status: Frozen Nov 8 2026, reworked Nov 9 2026 (moved outside the coil)
+Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (moved outside the coil, 35 mm)
 
 ### What I picked
-- A DRV5023FAQDBZR hall sensor on the underside of the hub PCB, facing down, 30 mm from the axis. It senses all the time instead of sampling, runs on 3.3 V, and only needs one magnet.
-- It sits at 30 mm so it's outside the wireless power coil. At 15 mm it would be right on top of it.
-- One N52 neodymium magnet (6 x 3 mm) in the top of the base, also at 30 mm. Every time the sensor passes it, that's angle zero.
+- A DRV5023FAQDBZR hall sensor on the underside of the hub PCB, facing down, 35 mm from the axis. It senses all the time instead of sampling, runs on 3.3 V, and only needs one magnet.
+- It sits at 35 mm so it's well outside the wireless power coil, which is 43 mm across (21.5 mm radius). At 15 mm it would be right on top of it.
+- One N52 neodymium magnet (6 x 3 mm) in the top of the base, also at 35 mm. Every time the sensor passes it, that's angle zero.
 - The gap between the magnet and the chip is about 5 mm: the 3 mm air gap between the coils plus the receive coil hanging below the hub PCB.
 - 10 kOhm pull-up to 3.3 V on the output, 0.1 uF cap right next to VCC.
 - The output goes LOW when the magnet is under it (open drain), so the capture triggers on the falling edge, which is the magnet's entry point.
@@ -59,8 +59,8 @@ Status: Frozen Nov 8 2026, reworked Nov 9 2026 (moved outside the coil)
 ### What that works out to
 - One spin takes 1 / 25 = 40 ms.
 - Each column is 360 / 200 = 1.8 degrees.
-- The sensor moves at 2 x pi x 0.030 x 25 = about 4.7 m/s.
-- So the pulse lasts roughly 6 mm / 4.7 m/s = about 1.3 ms.
+- The sensor moves at 2 x pi x 0.035 x 25 = about 5.5 m/s.
+- So the pulse lasts roughly 6 mm / 5.5 m/s = about 1.1 ms.
 - The magnet gives about 45 mT at about 5.6 mm (gap plus the chip's package), and the sensor needs 6.8 mT at most to trigger.
 - The sensor has 13 us of delay (25 us max), which is 0.07 to 0.13 of a column. It's always the same, so I just shift the image to cancel it.
 - If the motor speed changes between spins, the error at the end of the spin is (speed change) x 200 columns.
@@ -70,10 +70,10 @@ Status: Frozen Nov 8 2026, reworked Nov 9 2026 (moved outside the coil)
 
 ### Does it work?
 - Jitter: I want it under a quarter column (50 us). The hardware timestamp is accurate to about 12.5 ns. Way under.
-- Pulse length: 1.3 ms is way longer than a 200 us column, so the edge is clean. Yes.
+- Pulse length: 1.1 ms is way longer than a 200 us column, so the edge is clean. Yes.
 - Field: about 6x more than it needs. Yes.
 - Drift on blade 2: a quarter column at worst on the face. Fine.
-- Coil: the coil's outer edge has to stay inside about 20 mm radius so the sensor has 10 mm of clearance. Check on the scope with the coil running that there are no extra pulses.
+- Coil: the coil's outer edge is at 21.5 mm, so the sensor at 35 mm has 13.5 mm of clearance. Check on the scope with the coil running that there are no extra pulses.
 - Speed stability: the motor has to stay within 0.25 percent between spins. Section 3.
 
 ## 3. Mechanics
@@ -87,7 +87,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 2026 (2 blades, battery on the axis, c
 - The two blades balance each other; trim weights are M3 screws and washers, which also cancel the ESP32 module sitting off centre on the hub and the battery wires running down one post
 - The LiPo sits on top of the top bar, centred on the axis, so it adds no imbalance and feels almost no spinning force
 - The hub PCB hangs about 15 mm under the bottom bar on standoffs, with the coupling in between, and carries no load
-- On the underside of the hub: the receive coil, a ferrite sheet between the coil and the PCB, and the hall sensor at 30 mm
+- On the underside of the hub: the receive coil, a ferrite sheet between the coil and the PCB, and the hall sensor at 35 mm
 - The transmit coil sits in the top of the base facing up, with its own ferrite under it and a 3 mm air gap to the receive coil
 - The ESP32-S3 antenna sticks out sideways past the edge of the bottom bar with about 15 mm clear, away from the coil
 - Each blade gets 5 wires from the hub (5 V, GND, clock, 2 data), tied down along the bar and the post
