@@ -124,46 +124,29 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, battery on the a
 Status: Frozen Nov 9 2026
 
 ### What I picked
-- Main power is wireless: a fixed transmit coil in the base and a spinning receive coil under the hub, both centred on the axis
-- The 12 V wall adapter (12 V 3 A) runs the motor driver, the coil transmitter, and a small 5 V buck that powers the base ESP32
-- The laptop USB is data only, so the base keeps working (idle face, waking up when someone walks over) even with the laptop unplugged
-- On the rotor, the coil's 5 V goes into a power-path charger: it runs the rotor and charges the battery at the same time
-- The charger has to hold its output around 4.4 V, below 5 V, because the boost after it can't turn 5 V into 5 V
-- The coil and the hub's USB-C both feed the charger through diodes, so neither can push power back into the other
-- The battery is a 1S LiPo, about 1000 to 1500 mAh, with a protection board, on the axis, and it's only backup: it fills in for short peaks and takes over if the coil stops
-- After the charger: boost to 5 V, then a 3.3 V LDO for the ESP32-S3 and hall sensor, and a P-MOSFET load switch for both blades
-- Battery voltage goes through a resistor divider into an ADC so the base knows the charge level, cutoff at 3.4 V
-- An 8-channel 74AHCT buffer running off 5 V level-shifts the 4 data lines and 4 separate copies of the clock (one per chain), with about 33 ohm resistors on each output for the long wires
-- Firmware caps both blades together at 1.0 A
-- Hub PCB keeps a USB-C port for flashing and debugging the rotor ESP32, which can charge the battery too
-- Motor: low side logic level N-MOSFET, flyback Schottky diode, 20 kHz PWM, one direction only so no H-bridge
+- Charger: BQ24073RGTR (C15220), power path, OUT holds 4.4 V while plugged in (swapped from the BQ24072, whose OUT just follows the battery)
+- Input limit: 1.1k on ILIM, about 1.45 A in (1.36 to 1.55 A)
+- Charge current: 1.18k on ISET, about 750 mA, which is half of the 1500 mAh battery
+- Boost: TPS61088 to 5 V, 316k / 100k on FB (5.04 V), 330k on FSW (about 500 kHz), 267k on ILIM (about 4.5 A), 2.2 uH inductor
+- 3.3 V: AMS1117-3.3
+- Blade switch: AO3401A between the charger OUT and the boost input
+- Firmware LED cap: 0.8 A (was 1.0 A)
 
 ### What that works out to
-- APA102-2020 max is 18 mA per colour, so 54 mA per LED at full white; real 2020s run closer to 10 mA per colour
-- All 144 LEDs at full white would be about 7.8 A (39 W) on paper, which the firmware cap never allows
-- Each LED draws 0.7 to 1 mA even when off, about 0.14 A for both blades, so the load switch cuts it when the LEDs are off
-- With two blades every spot gets lit twice per spin, so each LED only needs about half brightness to look the same as one blade
-- A typical talking face lights about 25 percent of the LEDs at about 15 mA each: 36 x 15 mA = about 0.54 A, plus 0.14 A idle = about 0.7 A
-- ESP32-S3: about 0.1 A average, 0.35 A in radio bursts
-- Typical rotor total: about 0.8 A at 5 V = 4 W, about 4.4 W before the boost
-- Peak rotor total with the cap: about 6.75 W at 5 V, about 7.5 W before the boost
-- Sleeping face (dim, still spinning): about 0.3 A at 5 V = 1.5 W, about 1.7 W before the boost
-- Off after 10 minutes (LEDs cut, motor stopped, radio listening): about 0.55 W
-- The coil receiver should give 5 V 1.5 A so the battery mostly rests; 5 V 1 A is the minimum
-- With a 1200 mAh battery, the backup runs about 50 minutes at a typical load
-- The coil transmitter draws about 10 W from the 12 V side because wireless power loses a chunk on the way
-- Motor plus coil plus base is about 16 W, and the 12 V 3 A adapter gives 36 W
-- The boost has to give 5 V at 1.5 A or more from a 3.0 V input, so cheap MT3608 or SX1308 boards are too weak
-- The LDO drops 1.7 V, so at 0.35 A it burns about 0.6 W and needs a SOT-223 package, not a SOT-23
+- Max into the boost while plugged in: 1.45 A x 4.4 V = about 6.4 W, so about 5.7 W out at 5 V
+- Peak with the cap: 0.8 A LEDs + 0.14 A idle + 0.1 A ESP32 = about 1.04 A at 5 V = 5.2 W, about 5.8 W before the boost
+- Typical: about 4 W at 5 V, 4.4 W before the boost, so about 2 W is left over to charge the battery
+- Charger heat: (5 - 4.4) x 1.45 A = about 0.9 W
+- Battery only, worst case: 5.8 W / 3.3 V = about 1.8 A into the boost, about 2.3 A peak with ripple
+- AO3401A heat at that: about 0.26 W, fine for a SOT-23
 
 ### Does it work?
-- Yes: the coil covers typical use, the battery covers peaks and outages, and nothing needs plugging in to charge
-- Idle current is a big chunk of the budget, so the load switch has to actually cut the blades when they're off
-- Decoupling: a 0.1 uF cap next to every LED, on the front beside the LED column because the back is bolted to the angle; 10 uF every 18 LEDs, about 220 uF bulk at the hub
-- Power goes up each blade from the bottom on wide copper, under 30 mV drop
-- The battery is on the axis, so it barely feels the spin, and the switch slides vertically so nothing can flip it
-- Still open: boost and charger chips (step 2), and bench testing how much current the coil pair really gives
-
+- Yes. Plugged in, the peak (5.8 W) stays under what the charger lets through (6.4 W), so the battery never helps, it only charges
+- Boost current limit is about 4.5 A typ, 3.2 A worst case, above the 2.3 A worst real peak
+- The inductor has to saturate above about 5.5 A
+- If the coil only gives about 1 A on the bench test, the LED cap drops to about 0.55 A
+- Still open: inductor Isat, TMR pin, COMP values, coil bench test
+  
 ## 5. Wireless
 Status: Frozen Nov 9 2026
 
