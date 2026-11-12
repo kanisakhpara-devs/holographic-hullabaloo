@@ -1,0 +1,152 @@
+(kicad_sch
+	(version 20260306)
+	(generator "eeschema")
+	(generator_version "10.0")
+	(uuid "9c305eeb-6999-4082-bee2-8f5518e9e019")
+	(paper "A4")
+	(lib_symbols)
+	(sheet
+		(at 156.21 24.13)
+		(size 123.19 58.42)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "2ad0bbfd-9eda-4a3e-bb09-de4674b3398d")
+		(property "Sheetname" "LED_IO"
+			(at 156.21 23.4184 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "led_io.kicad_sch"
+			(at 156.21 83.1346 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "hub"
+				(path "/9c305eeb-6999-4082-bee2-8f5518e9e019"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 24.13 24.13)
+		(size 123.19 58.42)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "c69e16de-849d-437a-b4df-8e6b247f7d1d")
+		(property "Sheetname" "power"
+			(at 24.13 23.4184 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "power.kicad_sch"
+			(at 24.13 83.1346 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "hub"
+				(path "/9c305eeb-6999-4082-bee2-8f5518e9e019"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 24.13 93.98)
+		(size 123.19 58.42)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+		)
+		(fill
+			(color 0 0 0 0)
+		)
+		(uuid "c7dd888b-adcc-40a8-affc-e43c83009362")
+		(property "Sheetname" "MCU_USB"
+			(at 24.13 93.2684 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "mcu_usb.kicad_sch"
+			(at 24.13 152.9846 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "hub"
+				(path "/9c305eeb-6999-4082-bee2-8f5518e9e019"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)
