@@ -3298,6 +3298,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C25744"
+			(at 99.06 78.74 90)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "9cd3bda6-7d4f-43f3-b686-40a9e36b136b")
 		)
@@ -3447,6 +3458,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 86.36 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C1525"
 			(at 86.36 62.23 0)
 			(hide yes)
 			(show_name no)
@@ -3758,6 +3780,17 @@
 		)
 		(property "Description" "Unpolarized capacitor"
 			(at 88.9 80.01 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C52923"
+			(at 88.9 80.01 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4133,6 +4166,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "TBD"
+			(at 127 146.05 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "34c69e96-f5f3-4b90-954c-fb94b6800ac6")
 		)
@@ -4204,6 +4248,17 @@
 		)
 		(property "Description" "Resistor"
 			(at 119.38 146.05 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "TBD"
+			(at 119.38 146.05 90)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4373,6 +4428,17 @@
 				)
 			)
 		)
+		(property "LCSC Part" "C25744"
+			(at 149.86 115.57 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "26f0ea9a-307f-4f1d-bc5f-a4f593737a2f")
 		)
@@ -4522,6 +4588,17 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 78.74 62.23 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC Part" "C45783"
 			(at 78.74 62.23 0)
 			(hide yes)
 			(show_name no)
