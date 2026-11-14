@@ -1,0 +1,5 @@
+(sym_lib_table
+	(version 7)
+	(lib (name "lade_leds") (type "KiCad") (uri "${KIPRJMOD}/lade_leds.kicad_sym") (options "") (descr ""))
+	(lib (name "blade_leds") (type "KiCad") (uri "${KIPRJMOD}/libs/blade_leds.kicad_sym") (options "") (descr ""))
+)
