@@ -4166,7 +4166,7 @@
 				)
 			)
 		)
-		(property "LCSC Part" "TBD"
+		(property "LCSC Part" "C2286"
 			(at 127 146.05 0)
 			(hide yes)
 			(show_name no)
@@ -4257,7 +4257,7 @@
 				)
 			)
 		)
-		(property "LCSC Part" "TBD"
+		(property "LCSC Part" "C11702"
 			(at 119.38 146.05 90)
 			(hide yes)
 			(show_name no)
