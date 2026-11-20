@@ -1,2 +1,11 @@
 pcb/blade/.history/
 pcb/hub/.history/
+.history/
+.pio/
+*.bak
+__pycache__/
+Claude outputs/
+image.png
+*.lck
+fp-info-cache
+*-backups/
