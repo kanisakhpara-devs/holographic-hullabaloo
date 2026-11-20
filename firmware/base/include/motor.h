@@ -3,4 +3,4 @@
 #include <Arduino.h>
 void motor_begin();
 void motor_set_target(bool spin);
-void motor_update(uint16_t rotor_rev_us);
+void motor_update(uint32_t rotor_rev_us);

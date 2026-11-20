@@ -40,7 +40,7 @@ struct StatusPacket {  // PKT_STATUS
   PacketHeader hdr;
   uint16_t battery_mv;
   uint8_t  flags;      // bit0 = power good, bit1 = charging
-  uint16_t rev_us;     // last measured spin time in microseconds (40000 = 25 rev/s)
+  uint32_t rev_us;     // last measured spin time in microseconds (40000 = 25 rev/s; 32-bit so slow spin-up doesn't overflow)
   uint8_t  crc;
 };
 #pragma pack(pop)

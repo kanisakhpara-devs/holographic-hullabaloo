@@ -3,4 +3,4 @@
 #include <Arduino.h>
 void radio_begin();
 void radio_update(uint32_t now_ms);
-uint16_t radio_rotor_rev_us();
+uint32_t radio_rotor_rev_us();

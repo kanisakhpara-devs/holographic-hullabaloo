@@ -1,5 +1,5 @@
 // Base pin map for the custom ESP32-S3-WROOM-1-N8 base board (pcb/base, Nov 19 revision).
-// Matches the GPIO map in docs/calculations.md / Notion Section 13. Keep in sync with the schematic.
+// Matches the base pin map in the README (firmware section) and pcb/base/base.kicad_sch. Keep in sync with the schematic.
 // Avoid strapping pins (IO0, IO3, IO45, IO46) and the USB pins (IO19, IO20).
 #pragma once
 

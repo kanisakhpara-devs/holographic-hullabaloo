@@ -125,7 +125,7 @@ STEP files: [`cad/step/`](cad/step/)
 | Blade (x2) | 4 (inner GND + 5V planes) | 190 mm long, wire tab at the bottom | 72 x APA102-2020 in 2 chains of 36, 100 nF per LED | [`pcb/blade`](pcb/blade) |
 | Base | 2 | 96 x 99.5 mm | ESP32-S3 (native USB), MAX98357A amp, AO4406A motor driver, USB-C, AMS1117, SS34 buck diode, 470 uF 12 V bulk cap, headers for mic, ToF sensors, buck, button | [`pcb/base`](pcb/base) |
 
-All three: KiCad 10, ERC 0 errors, DRC 0 errors / 0 unconnected, `gerbers.zip` in each folder. JLCPCB standard specs (HASL, 0.15 mm clearance, 0.3 mm min drill).
+All three: KiCad 10, ERC 0 errors, DRC 0 errors / 0 unconnected, `gerbers.zip` in each folder. JLCPCB standard specs (HASL, 0.15 mm clearance). Hub and base use 0.3 mm min drill; the 4-layer blade uses 0.45 / 0.2 mm vias. JLC assembly files (BOM + pick and place) for the hub and base are in their folders as `*_bom_jlc.csv` and `*_cpl_jlc.csv`.
 
 **$\color{violet}{\textsf{hub}}$**
 

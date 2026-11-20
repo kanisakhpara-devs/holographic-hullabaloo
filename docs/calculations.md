@@ -28,7 +28,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, 2.5 mm pitch, pa
 * Each spot is only lit 2 x 200 us out of every 40 ms, so 1 percent of the time.
 * One chain per column: 36 x 4 bytes + 4 start bytes + about 3 end bytes = about 151 bytes = about 1210 bits.
 * At 12 MHz that takes about 100 us, so the bus is busy half the column.
-* The LEDs at the tips update about 100 us after the ones in the middle, which is half a column (about 0.8 mm). Both halves bend the same way, so a vertical line gets a very slight bend with no break in the middle.
+* Inside each half, the top LED updates about 100 us after the bottom one, which is half a column (about 0.8 mm). Both halves slant the same way, so without a fix a vertical line would have a half-column step where the halves meet in the middle. The firmware fixes it by taking each row's pixel from a slightly later column, so vertical lines stay straight.
 * The LCD peripheral sends one byte per clock tick, one bit per chain, so each column is about 1210 bytes in the DMA buffer. Two of them take turns: core 1 fills one while the other is being sent.
 * One full frame is 72 x 200 x 3 bytes = about 43 KB.
 * The colour PWM runs at about 20 kHz, so about 4 PWM cycles fit in each column. No visible dashes.
@@ -52,7 +52,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (moved outside the coil, 35
 
 * A DRV5023FAQDBZR hall sensor on the underside of the hub PCB, facing down, 35 mm from the axis. It senses all the time instead of sampling, runs on 3.3 V, and only needs one magnet.
 * It sits at 35 mm so it's well outside the wireless power coil, which is 43 mm across (21.5 mm radius). At 15 mm it would be right on top of it.
-* One N52 neodymium magnet (6 x 3 mm) in the top of the base, also at 35 mm. Every time the sensor passes it, that's angle zero.
+* One neodymium magnet (6 x 3 mm, the seller doesn't state the grade) in the top of the base, also at 35 mm. Every time the sensor passes it, that's angle zero.
 * The gap between the magnet and the chip is about 7.5 mm: the 3 mm air gap between the coils plus the receive coil and ferrite hanging below the hub PCB.
 * 10 kOhm pull-up to 3.3 V on the output, 0.1 uF cap right next to VCC.
 * The output goes LOW when the magnet is under it (open drain), so the capture triggers on the falling edge, which is the magnet's entry point.
@@ -94,13 +94,13 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, battery on the a
 * Rotor is a U frame made of aluminium: a bottom bar on the motor, a blade post 50 mm out on each side, and a top bar joining the two posts
 * The bottom bar is 30 mm wide (not a full disc), solid in the middle where the flange coupling bolts on, with one thin slot cut from the middle out to one side so eddy currents from the coil can't loop around in it
 * Each blade PCB (about 190 mm long, to fit the mounting holes and wire pads) is bolted to a 10 x 10 x 1 mm aluminium angle with M2 screws, nylon washers and Kapton tape in between (no straps, they creep), with slotted holes so the two blades can be lined up
-* All the aluminium is matte dark grey or black (black anodised, or self-etching primer plus matte black spray)
+* All the aluminium is matte dark grey or black (epoxy primer plus matte black spray)
 * The two blades balance each other; trim weights are M3 screws and washers, which also cancel the ESP32 module sitting off centre on the hub and the battery wires running down one post
 * The LiPo sits on top of the top bar, centred on the axis, so it adds no imbalance and feels almost no spinning force
 * The hub PCB hangs 13.5 mm under the bottom bar (12 mm nylon standoffs plus washers), so the 17 mm motor shaft goes 6.3 mm into the coupling
 * On the underside of the hub: the receive coil, a ferrite sheet between the coil and the PCB, and the hall sensor at 35 mm
 * The transmit coil sits in the top of the base facing up, with its own ferrite under it and a 3 mm air gap to the receive coil
-* The ESP32-S3 antenna sticks out sideways past the edge of the bottom bar with about 15 mm clear, away from the coil
+* The ESP32-S3 antenna sticks out sideways past the edge of the bottom bar with about 12 mm clear, away from the coil
 * Each blade gets 6 wires from the hub (5 V, GND, and a clock + data pair for each chain), tied down along the bar and the post
 * Motor is a 12 V brushed DC motor with ball bearings, about 3000 RPM with no load, 5 mm shaft, rigid flange coupling under 22 mm across
 * Base ESP32 drives the motor with PWM through a logic level MOSFET and a flyback diode
@@ -118,7 +118,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, battery on the a
 * Balance: each blade is about 15 g x 50 mm = 750 g mm, and they cancel each other out
 * Leftover imbalance target: under 20 g mm, which is about 0.5 N on the motor bearing
 * Battery on the axis: a 25 g battery 1 mm off centre is already 25 g mm, so it has to sit within about 0.5 mm of the axis or get trimmed out
-* Whole rotor: about 115 g, about 1.5 J stored when spinning
+* Whole rotor: about 123 g with the 30 mm bars, about 1.5 J stored when spinning
 * Rotor sweep is about 104 mm, so the cover is about 125 mm across and about 252 mm tall above the base
 * Motor runs at about half its no load speed, so the PI loop has room to push
 
@@ -145,6 +145,8 @@ Status: Frozen Nov 9 2026
 * 3.3 V: AMS1117-3.3
 * Switches: Q1 (AO3401A) is the main power switch between the charger OUT and the boost input; Q2 (AO3401A) cuts the 5 V to the blades
 * Firmware LED cap: 0.8 A (was 1.0 A)
+* Base: 12 V 3 A adapter. An MP1584 buck set to 5.0 V feeds the base 5 V rail through an SS34 diode, and USB power comes in through another SS34, so the two can't push into each other
+* Base bulk cap: 470 uF 25 V on the 12 V rail for the motor's start surge
 
 ### What that works out to
 
@@ -154,6 +156,7 @@ Status: Frozen Nov 9 2026
 * Charger heat: (5 - 4.4) x 1.45 A = about 0.9 W
 * Battery only, worst case: 5.8 W / 3.3 V = about 1.8 A into the boost, about 2.3 A peak with ripple
 * AO3401A heat at that: about 0.26 W, fine for a SOT-23
+* Base 5 V rail: about 4.6 V after the diode, about 1.2 A peak (ESP32, amp at full volume, sensors)
 
 ### Does it work?
 
@@ -214,3 +217,27 @@ Status: Frozen Nov 9 2026
 * Coil: it runs at a few hundred kHz, nowhere near 2.4 GHz, so it doesn't bother the radio.
 * Base enclosure: the top panel can't be metal, because the rotor's antenna talks to the base through it.
 
+## 6\. Audio
+
+Status: Added Nov 19 2026 (speaker and mic moved into the base)
+
+### What I picked
+
+* Speaker: 40 mm, 4 ohm, 3 W, behind a grille in the front wall of the base
+* Amp: MAX98357A on the base PCB, I2S in from the ESP32-S3, 9 dB gain (GAIN pin left open), mono mix set by a 1M resistor on SD_MODE
+* Mic: INMP441 I2S MEMS mic behind a pinhole in the front wall
+* Both go to the laptop as a USB sound card over the same cable as the serial link
+* Push to talk, and the speaker is muted while listening, so the mic doesn't hear the device's own voice
+
+### What that works out to
+
+* Audio both ways: 16 kHz, 16-bit, mono = 256 kbit/s each way, about 32 KB/s
+* USB full speed is 12 Mbit/s, so audio plus serial uses about 5 percent of it
+* Amp output: up to about 3.2 W into 4 ohm at 5 V, a bit less (about 2.7 W) at 4.6 V after the diode
+
+### Does it work?
+
+* Bandwidth: yes, the USB link is barely used
+* Loudness: about 2.7 W from a 40 mm speaker is plenty for a desk
+* Noise: the mic shares the base with the motor and the speaker, so push to talk plus muting the speaker keeps the recording clean; the motor caps from section 5 keep brush noise off the rails
+* Still open: the Arduino core can't do USB audio, so the base firmware needs ESP-IDF / TinyUSB for the sound card
