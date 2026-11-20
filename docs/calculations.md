@@ -10,11 +10,11 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, 2.5 mm pitch, pa
 * APA102-2020 LEDs (Adafruit 3341, which is the 8-pad APA102-2020-256-8). They have a separate clock line so they update way faster than WS2812, and they don't smear when spinning.
 * I hand solder them, because JLC and LCSC had none in stock.
 * 72 LEDs tall on each blade. Enough to show expressions properly.
-* 2.5 mm between LEDs. The datasheet's recommended pads are 2.2 x 2.29 mm (wider than the 2.0 mm body), so anything tighter than about 2.5 mm makes neighbouring pads touch.
+* 2.5 mm between LEDs. The LEDs are 2.0 mm wide, so there's 0.5 mm between bodies, and the footprint uses small 0.6 x 0.45 mm pads that stay under each LED.
 * 200 columns per spin. More columns means sharper curves sideways, and it costs zero extra hardware.
 * 25 spins per second (1500 RPM).
 * Both blades show the same picture, blade 2 is just 100 columns ahead of blade 1.
-* Each blade is split into 2 chains of 36 LEDs. Both chains start at the middle of the blade, one runs up and one runs down.
+* Each blade is split into 2 chains of 36 LEDs, both running upwards: chain A starts at the middle and runs to the top, chain B starts at the bottom (next to the wire tab) and runs to the middle. The firmware corrects the small timing step where the two halves meet.
 * All 4 chains get sent at the same time by the ESP32-S3's LCD parallel peripheral, with one shared clock that gets buffered into 4 copies, one per chain.
 * Brightness only uses the 8-bit colour values. The 5-bit global brightness stays at max (31) because it's a slow PWM that would chop each column into dashes.
 
@@ -41,7 +41,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, 2.5 mm pitch, pa
 * RAM: two frame buffers are 86 KB plus about 2.4 KB of DMA buffers, and the ESP32-S3 has 512 KB. Easily.
 * Blade alignment: if blade 2 isn't exactly opposite, the face doubles up. 0.5 mm off is about 0.3 of a column, so the firmware gets an angle trim per blade and the blade mounts get slotted holes to line up the rows.
 * Frame swaps: the new frame swaps in at the index pulse, which is right before the face for blade 1 and exactly on the hair seam at the back for blade 2, so neither blade shows a tear.
-* Pitch: the LEDs sit with the 2.2 mm pad width along the blade, so there's a 0.3 mm copper gap between neighbours. Enough to hand solder without bridges.
+* Pitch: at 2.5 mm the pads of neighbouring LEDs are well apart, since every pad sits under its own LED body. Enough to hand solder without bridges.
 * Soldering: 2020s have their pads underneath, so a soldering iron can't do them. Stencil paste onto the whole blade, place all 72 LEDs, then reflow the whole blade in one hot air pass (the datasheet says reflow only once).
 
 ## 2\. Position sensing
@@ -53,7 +53,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (moved outside the coil, 35
 * A DRV5023FAQDBZR hall sensor on the underside of the hub PCB, facing down, 35 mm from the axis. It senses all the time instead of sampling, runs on 3.3 V, and only needs one magnet.
 * It sits at 35 mm so it's well outside the wireless power coil, which is 43 mm across (21.5 mm radius). At 15 mm it would be right on top of it.
 * One N52 neodymium magnet (6 x 3 mm) in the top of the base, also at 35 mm. Every time the sensor passes it, that's angle zero.
-* The gap between the magnet and the chip is about 5 mm: the 3 mm air gap between the coils plus the receive coil hanging below the hub PCB.
+* The gap between the magnet and the chip is about 7.5 mm: the 3 mm air gap between the coils plus the receive coil and ferrite hanging below the hub PCB.
 * 10 kOhm pull-up to 3.3 V on the output, 0.1 uF cap right next to VCC.
 * The output goes LOW when the magnet is under it (open drain), so the capture triggers on the falling edge, which is the magnet's entry point.
 * It only reacts to a south pole, so the magnet's south face points up at the chip.
@@ -69,7 +69,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (moved outside the coil, 35
 * Each column is 360 / 200 = 1.8 degrees.
 * The sensor moves at 2 x pi x 0.035 x 25 = about 5.5 m/s.
 * So the pulse lasts roughly 6 mm / 5.5 m/s = about 1.1 ms.
-* The magnet gives about 45 mT at about 5.6 mm (gap plus the chip's package), and the sensor needs 6.8 mT at most to trigger.
+* The magnet gives about 19 mT at about 7.5 mm, and the sensor needs 6.8 mT at most to trigger.
 * The sensor has 13 us of delay (25 us max), which is 0.07 to 0.13 of a column. It's always the same, so I just shift the image to cancel it.
 * If the motor speed changes between spins, the error at the end of the spin is (speed change) x 200 columns.
 * 1 percent change = 2 columns off. You'd see a tear.
@@ -80,7 +80,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (moved outside the coil, 35
 
 * Jitter: I want it under a quarter column (50 us). The hardware timestamp is accurate to about 12.5 ns. Way under.
 * Pulse length: 1.1 ms is way longer than a 200 us column, so the edge is clean. Yes.
-* Field: about 6x more than it needs. Yes.
+* Field: about 3x more than it needs. Yes.
 * Drift on blade 2: a quarter column at worst on the face. Fine.
 * Coil: the coil's outer edge is at 21.5 mm, so the sensor at 35 mm has 13.5 mm of clearance. Check on the scope with the coil running that there are no extra pulses.
 * Speed stability: the motor has to stay within 0.25 percent between spins. Section 3.
@@ -92,7 +92,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, battery on the a
 ### What I picked
 
 * Rotor is a U frame made of aluminium: a bottom bar on the motor, a blade post 50 mm out on each side, and a top bar joining the two posts
-* The bottom bar is about 25 mm wide (not a full disc), solid in the middle where the flange coupling bolts on, with one thin slot cut from the middle out to one side so eddy currents from the coil can't loop around in it
+* The bottom bar is 30 mm wide (not a full disc), solid in the middle where the flange coupling bolts on, with one thin slot cut from the middle out to one side so eddy currents from the coil can't loop around in it
 * Each blade PCB (about 190 mm long, to fit the mounting holes and wire pads) is bolted to a 10 x 10 x 1 mm aluminium angle with M2 screws, nylon washers and Kapton tape in between (no straps, they creep), with slotted holes so the two blades can be lined up
 * All the aluminium is matte dark grey or black (black anodised, or self-etching primer plus matte black spray)
 * The two blades balance each other; trim weights are M3 screws and washers, which also cancel the ESP32 module sitting off centre on the hub and the battery wires running down one post
@@ -101,7 +101,7 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, battery on the a
 * On the underside of the hub: the receive coil, a ferrite sheet between the coil and the PCB, and the hall sensor at 35 mm
 * The transmit coil sits in the top of the base facing up, with its own ferrite under it and a 3 mm air gap to the receive coil
 * The ESP32-S3 antenna sticks out sideways past the edge of the bottom bar with about 15 mm clear, away from the coil
-* Each blade gets 5 wires from the hub (5 V, GND, clock, 2 data), tied down along the bar and the post
+* Each blade gets 6 wires from the hub (5 V, GND, and a clock + data pair for each chain), tied down along the bar and the post
 * Motor is a 12 V brushed DC motor with ball bearings, about 3000 RPM with no load, 5 mm shaft, rigid flange coupling under 22 mm across
 * Base ESP32 drives the motor with PWM through a logic level MOSFET and a flyback diode
 * The rotor sends its spin time to the base over ESP-NOW every spin, and the base runs a PI loop to hold 25 rev/s
@@ -119,14 +119,14 @@ Status: Frozen Nov 8 2026, reworked Nov 9 to 10 2026 (2 blades, battery on the a
 * Leftover imbalance target: under 20 g mm, which is about 0.5 N on the motor bearing
 * Battery on the axis: a 25 g battery 1 mm off centre is already 25 g mm, so it has to sit within about 0.5 mm of the axis or get trimmed out
 * Whole rotor: about 115 g, about 1.5 J stored when spinning
-* Rotor sweep is about 104 mm, so the cover is about 125 mm across and about 240 mm tall above the base
+* Rotor sweep is about 104 mm, so the cover is about 125 mm across and about 252 mm tall above the base
 * Motor runs at about half its no load speed, so the PI loop has room to push
 
 ### Does it work?
 
 * Bending: yes, 0.12 mm is nothing and the LED solder joints won't flex
 * Balance: yes once it's trimmed; two matching blades start out close to balanced, then spin up slowly and add washers until the shaking stops
-* Coil: ferrite behind both coils, the hub 15 mm below the bar, and a slot in the bar so eddy currents can't circulate, so no real heating; the exact coil size comes from the coil I pick
+* Coil: ferrite behind both coils, the hub 13.5 mm below the bar, and a slot in the bar so eddy currents can't circulate, so no real heating; the exact coil size comes from the coil I pick
 * Speed: the PI loop plus the rotor's own inertia should hold 0.25 percent spin to spin, but I'll only know for sure when I check the hall pulse on the scope
 * Paint: adds almost no weight; paint before balancing, and keep the Kapton because paint isn't a reliable insulator
 * Safety: 7.9 m/s and 1.5 J is low, the battery barely feels the spin, and the cover catches anything that comes loose
@@ -143,7 +143,7 @@ Status: Frozen Nov 9 2026
 * Charge current: 1.18k on ISET, about 750 mA, which is half of the 1500 mAh battery
 * Boost: TPS61088 to 5 V, 316k / 100k on FB (5.04 V), 330k on FSW (about 500 kHz), 267k on ILIM (about 4.5 A), 2.2 uH inductor
 * 3.3 V: AMS1117-3.3
-* Blade switch: AO3401A between the charger OUT and the boost input
+* Switches: Q1 (AO3401A) is the main power switch between the charger OUT and the boost input; Q2 (AO3401A) cuts the 5 V to the blades
 * Firmware LED cap: 0.8 A (was 1.0 A)
 
 ### What that works out to
@@ -169,7 +169,7 @@ Status: Frozen Nov 9 2026
 
 ### What I picked
 
-* Laptop to base: USB serial at 115200 baud through the base dev board's USB chip
+* Laptop to base: one USB-C cable into the base ESP32-S3's native USB, which shows up as a serial port and a USB sound card
 * Base to rotor and back: ESP-NOW on one fixed Wi-Fi channel, no router, no venue Wi-Fi
 * Every packet starts with a magic byte, a version byte, a type byte and a sequence number; serial packets also get a length byte and a CRC-8 because USB serial has no checksum of its own (ESP-NOW already has one)
 * Commands always carry the whole state (mode, emotion, mouth level 0 to 4, look angle, brightness), never "change X by Y", so one lost packet gets fixed by the next one
@@ -192,7 +192,7 @@ Status: Frozen Nov 9 2026
 
 * Command packet: 4 header bytes + about 6 bytes of state = about 10 bytes
 * Rotor status packet: 4 header bytes + 4 (spin time) + 2 (battery) + 1 (flags) = about 11 bytes
-* Serial: about 30 packets a second x about 12 bytes = about 360 bytes/s, and 115200 baud carries about 11,500 bytes/s, so about 30x headroom
+* Serial: about 30 packets a second x about 12 bytes = about 360 bytes/s, tiny next to what USB full speed carries alongside the audio
 * Radio: about 30 packets a second down (25 mouth plus 5 heartbeats) and 25 up, so about 55 packets a second
 * Each ESP-NOW packet takes about 1 ms of air time at the default 1 Mbit/s, including the reply, so about 5.5 percent of the air
 * Base to rotor distance is about 5 to 10 cm, so the signal is strong even while the aluminium spins past
