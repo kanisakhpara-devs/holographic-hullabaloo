@@ -313,16 +313,16 @@ Full list with a link for every part: [`bom.csv`](bom.csv)
 
 | Area | What I did | What AI (Claude) did |
 | --- | --- | --- |
-| Design decisions | Made every decision | Proposed options, did calculations, checked datasheets |
+| Design decisions | Made every decision | Did calculations and scraped datasheets |
 | Hub schematic | Drew all 3 sheets in KiCad | Gave a guide |
 | Blade schematic | Drew it, made the LED symbol + footprint | Gave a guide|
-| Hub layout | Placement, boost SW node / BOOT / VIN routing, GND pours, antenna keepout | Part of the placement, rest of the boost loop, autorouted the remainder (Freerouting), DRC fixes, moved the USB-C to a flat edge and rerouted it |
+| Hub layout | Placement, boost SW node / BOOT / VIN routing, GND pours, antenna keepout | Part of the placement, rest of the boost loop.|
 | Blade layout | Picked the options (4-layer, wire tab, chain direction) | Built and routed the whole board by script (72 LEDs in a row) |
-| Base PCB | Picked out solutions and proposed ideas and concepts| Generated the schematic, layout and routing by script |
-| CAD | First A1, A2, A4 and blade models, full Onshape assembly, appearances | Generated STEP files with CadQuery (frame v2/v3, blade fix, hub placeholder, drive stack, base v1 to v3, battery + cover), dimensioned sketches, interference checks |
-| Design review | Decided every fix (bar width, buck diode, 470 uF placement) | Cross-checked CAD, PCBs and BOM against each other, made the fixes I approved |
+| Base PCB | Picked out solutions and proposed ideas and concepts| Made the layout and routing by script |
+| CAD | All part studios and appearances | Made dimensioned sketches and carried out interference checks |
+| Design review | Decided every fix (bar width, buck diode, 470 uF placement) | Cross-checked CAD, PCBs and BOM against each other. |
 | Firmware | Reviewed it | Wrote the skeleton |
-| Renders | Art direction | Blender scene and render scripts |
+| Renders | Artistic direction | Blender scene and render scripts |
 | BOM | Built the sheet, sourcing calls | Looked up parts and stock, filled rows |
 | Journals | All of it | Nothing |
 | This README | Wrote it | Section outline and number tables |
