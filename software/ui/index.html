@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Holographic Hullabaloo</title>
+<link rel="stylesheet" href="css/app.css">
+</head><body>
+<div id="stage">
+<svg id="waves" viewBox="0 0 1920 1080" preserveAspectRatio="none" aria-hidden="true">
+ <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".35"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs>
+ <path d="M0 330C300 280 520 420 820 250C1120 90 1400 260 1920 130V0H0Z" fill="url(#g1)"/>
+ <path d="M0 760C420 700 700 860 1100 700C1500 540 1700 640 1920 560V1080H0Z" fill="#fff" opacity=".18"/>
+ <path d="M900 1080C1100 780 1500 760 1920 700V1080Z" fill="#1f6a72" opacity=".35"/>
+ <path d="M0 880C300 830 520 960 900 880" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/>
+</svg>
+<div id="blobs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+<div id="topbar"></div>
+<div id="left"></div>
+<div class="card" id="panel"><div class="inner" id="pin"></div></div>
+<div id="drawer" role="dialog" aria-label="More"></div>
+<div id="wiz" role="dialog" aria-label="First run setup"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="modal" role="dialog" aria-modal="true"><div class="box" id="mbox"></div></div>
+</div>
+<script src="js/core.js"></script>
+<script src="js/home.js"></script>
+<script src="js/face.js"></script>
+<script src="js/glass.js"></script>
+<script src="js/transcript.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/wizard.js"></script>
+<script src="js/main.js"></script>
+</body></html>

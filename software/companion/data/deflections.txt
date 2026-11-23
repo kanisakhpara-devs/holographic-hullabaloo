@@ -1,0 +1,6 @@
+# One tagged deflection line per line. Used when a filter trips.
+[smug] Nice try. [eyeroll] I'm a family-friendly mustache.
+[suspicious] I see what you're doing. [bored] Not happening.
+[eyeroll] Let's pretend you asked something classier.
+[smug] My mustache has standards. [neutral] Ask me something else.
+[bored] Hard pass. [smug] Next question.

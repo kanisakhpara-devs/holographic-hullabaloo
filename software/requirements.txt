@@ -1,0 +1,32 @@
+# Pinned to the versions tested on Python 3.11 (sandbox, CPU). Install on Windows with:
+#   py -3.11 -m pip install -r requirements.txt
+# then for CUDA Whisper: the NVIDIA driver is enough (ctranslate2 wheels bundle CUDA 12 runtime; cuDNN via pip below)
+fastapi==0.165.0
+uvicorn[standard]==0.54.0
+websockets==17.4
+httpx==0.28.1
+numpy==2.4.6
+pyserial==3.5
+sounddevice==0.5.6
+soundfile==0.14.0
+faster-whisper==1.2.1
+ctranslate2==4.9.0
+kokoro==0.9.4
+misaki[en]==0.9.4
+silero-vad==6.2.3
+onnxruntime==1.32.0
+webrtcvad-wheels==2.0.14.post1
+openwakeword==0.6.0        # wake word; models download once into the app data folder
+watchfiles>=1.0            # browser dev mode auto-restart
+ddgs>=9.0                  # optional web search toggle
+nvidia-ml-py==13.615.71   # provides the pynvml module
+# torch: install the CUDA build only if you want Kokoro on GPU (tts_device=cuda):
+#   py -3.11 -m pip install torch --index-url https://download.pytorch.org/whl/cu124
+# CPU torch is pulled in by kokoro automatically.
+# CUDA libraries for faster-whisper on the GPU (were missing from this list before Nov 23)
+nvidia-cudnn-cu12==9.28.1.4
+nvidia-cublas-cu12==12.9.2.10
+nvidia-cuda-nvrtc-cu12==12.9.86
+# English model that misaki (Kokoro's text front end) loads; without it the backend tries to download it at startup
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+pytest==9.2.0

@@ -1,0 +1,74 @@
+{
+  "neutral": {
+    "speed": 1.0,
+    "voice": "am_michael",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "happy": {
+    "speed": 1.1,
+    "voice": "am_michael",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "smug": {
+    "speed": 0.92,
+    "voice": "am_adam",
+    "pause_ms": 250,
+    "pitch_note": ""
+  },
+  "angry": {
+    "speed": 1.15,
+    "voice": "am_adam",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "surprised": {
+    "speed": 1.15,
+    "voice": "am_michael",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "sad": {
+    "speed": 0.85,
+    "voice": "am_michael",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "confused": {
+    "speed": 0.95,
+    "voice": "am_michael",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "sleepy": {
+    "speed": 0.78,
+    "voice": "am_adam",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "bored": {
+    "speed": 0.88,
+    "voice": "am_adam",
+    "pause_ms": 400,
+    "pitch_note": ""
+  },
+  "suspicious": {
+    "speed": 0.9,
+    "voice": "am_adam",
+    "pause_ms": 180,
+    "pitch_note": ""
+  },
+  "laughing": {
+    "speed": 1.12,
+    "voice": "am_michael",
+    "pause_ms": 120,
+    "pitch_note": ""
+  },
+  "eyeroll": {
+    "speed": 0.92,
+    "voice": "am_adam",
+    "pause_ms": 350,
+    "pitch_note": ""
+  }
+}

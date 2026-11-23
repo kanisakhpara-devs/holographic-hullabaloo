@@ -1,0 +1,27 @@
+{
+ "w": 72,
+ "h": 78,
+ "emotions": [
+  "neutral",
+  "happy",
+  "smug",
+  "angry",
+  "surprised",
+  "sad",
+  "confused",
+  "sleepy",
+  "bored",
+  "suspicious",
+  "laughing",
+  "eyeroll"
+ ],
+ "columns": [
+  "closed",
+  "ah",
+  "oh",
+  "ee",
+  "oo",
+  "fv",
+  "blink"
+ ]
+}

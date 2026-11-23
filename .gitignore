@@ -9,3 +9,9 @@ image.png
 *.lck
 fp-info-cache
 *-backups/
+
+# companion app (local only)
+software/.venv/
+software/setup_log.txt
+dev_log.txt
+dev_stopped.flag

@@ -1,0 +1,34 @@
+# PG post-filter word list. One word or regex per line. Lines starting with # are ignored.
+# Matched case-insensitively on whole words. A trailing * means "this prefix".
+fuck*
+shit*
+bullshit
+bitch*
+bastard*
+asshole*
+arse*
+dick
+dickhead
+piss*
+cunt*
+wank*
+crap
+damn
+goddamn*
+hell
+bloody
+slut*
+whore*
+porn*
+sex
+sexy
+nude*
+naked
+boob*
+tits
+penis
+vagina
+orgasm*
+horny
+kill yourself
+kys
