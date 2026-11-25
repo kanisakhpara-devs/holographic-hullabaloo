@@ -32,6 +32,7 @@ the packets that overlap it. The firmware should do the same for laptop packets.
 | 5 | BRIGHTNESS | cap 0..255 | 0 | LED brightness cap, device answers BRIGHTNESS_ACK |
 | 6 | SLEEP_ANIM | 0 | 0 | reserved, device ignores it for now |
 | 7 | SHOW_EMOTION_TEST | emotion index 0..11 | 0 | hold this face for 3 s (diagnostics), then go back |
+| 8 | LOOK | head turn in columns, signed (-100..100, two's complement) | 0 | turn the whole head (music bobbing). 0 = straight ahead |
 
 Emotion index order: `neutral happy smug angry surprised sad confused sleepy bored suspicious laughing eyeroll`
 (0 to 11). Viseme index order: `closed ah oh ee oo fv` (0 to 5).
@@ -47,6 +48,7 @@ Examples (hex):
 | BRIGHTNESS 128 | `a5 05 80 00 85` | 5 + 128 = 133 = 0x85 |
 | SLEEP_ANIM | `a5 06 00 00 06` | 6 |
 | SHOW_EMOTION_TEST eyeroll (index 11) | `a5 07 0b 00 12` | 7 + 11 = 18 = 0x12 |
+| LOOK -3 columns | `a5 08 fd 00 05` | 8 + 253 = 261, & 0xFF = 0x05 |
 
 ## Device to laptop (header 0x5A)
 
@@ -57,6 +59,8 @@ Examples (hex):
 | 3 | PONG | 0 | 0 | answer to PING (any packet also counts as a heartbeat) |
 | 4 | ROTOR_STATUS | 1 ok, 0 fault | 0 | rotor radio link and motor state, send on change and every 5 s |
 | 5 | BRIGHTNESS_ACK | cap now in force | 0 | answer to BRIGHTNESS |
+| 6 | ROTOR_POWER | (battery mV - 2500) / 10 | bit0 power good, bit1 charging | from the rotor's StatusPacket, about once a second |
+| 7 | ROTOR_SPIN | RPM high byte | RPM low byte | measured spin speed from the rotor, about once a second (1500 = target) |
 
 Examples (hex):
 
@@ -67,6 +71,8 @@ Examples (hex):
 | PONG | `5a 03 00 00 03` | 3 |
 | ROTOR_STATUS ok | `5a 04 01 00 05` | 4 + 1 = 5 |
 | BRIGHTNESS_ACK 200 | `5a 05 c8 00 cd` | 5 + 200 = 205 = 0xCD |
+| ROTOR_POWER 3950 mV, power good + charging | `5a 06 91 03 9a` | 6 + 145 + 3 = 154 = 0x9A |
+| ROTOR_SPIN 1500 rpm | `5a 07 05 dc e8` | 7 + 5 + 220 = 232 = 0xE8 |
 
 ## Link state machine (laptop side)
 
@@ -82,10 +88,15 @@ Examples (hex):
 While the link is DOWN the laptop drops FACE, MOUTH and POWER packets instead of queueing them, because an old
 face would be wrong by the time the device is back. The app resends the current face and power state on link UP.
 
+The base turns the rotor's ESP-NOW StatusPacket (battery_mv, flags, rev_us) into ROTOR_POWER and ROTOR_SPIN
+(rpm = 60,000,000 / rev_us). The Device health page in the app shows them. Added Nov 25; the base firmware
+(`firmware/base/src/serial_link.cpp`) still has to send them.
+
 ## Rates
 
 - MOUTH at most 30 per second (the lip sync timeline is 30 fps).
 - FACE only when a face changes.
+- LOOK at most 30 per second (only while music reactions are on).
 - The firmware must answer PING within 100 ms. Keep the PONG path out of anything that blocks on the radio.
 
 ## Not covered here

@@ -79,7 +79,7 @@ def sent(pg, typ=None):
     s = pg.evaluate("window.__sent")
     return [m for m in s if typ is None or m.get("type") == typ]
 
-CATS = ["Persona", "Answers", "Voice & wake", "Audio", "Emotions", "Privacy", "Appearance", "Device", "System", "Developer", "About"]
+CATS = ["Persona", "Answers", "Voice & wake", "Routines", "Audio", "Emotions", "Privacy", "Appearance", "Device", "Health", "System", "Developer", "About"]
 
 def go_cat(pg, c):
     pg.evaluate("c => pickCat(c)", c)
@@ -112,7 +112,7 @@ def test_every_page_renders(page):
 def test_all_43_settings_have_a_control(page):
     open_page(page, "#settings")
     keys = set(page.evaluate("Object.keys(DEFAULTS)"))
-    assert len(keys) == 43
+    assert len(keys) == 53
     found = set()
     for c in CATS:
         go_cat(page, c)
@@ -146,6 +146,9 @@ def test_every_control_sends_its_patch(page):
                 cur = el.evaluate("e => e.value")
                 other = next((v for v in vals if v != cur), cur)
                 el.select_option(other)
+            elif tag.startswith("INPUT:time"):
+                el.fill("21:30")
+                el.dispatch_event("change")
             elif tag.startswith("INPUT:text") or tag.startswith("TEXTAREA"):
                 el.fill("x test")
                 el.dispatch_event("change")

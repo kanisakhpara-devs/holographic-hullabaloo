@@ -14,9 +14,16 @@ enum PacketType : uint8_t {
 
 enum Mode : uint8_t { MODE_OFF = 0, MODE_SLEEP = 1, MODE_IDLE = 2, MODE_TALK = 3 };
 
+// Same order as docs/PROTOCOL.md and the rows of face_sheet.png / faces.bin (0 to 11).
 enum Emotion : uint8_t {
-  EMO_NEUTRAL = 0, EMO_HAPPY, EMO_SMIRK, EMO_ANNOYED, EMO_SURPRISED, EMO_THINKING, EMO_SLEEPING
+  EMO_NEUTRAL = 0, EMO_HAPPY, EMO_SMUG, EMO_ANGRY, EMO_SURPRISED, EMO_SAD,
+  EMO_CONFUSED, EMO_SLEEPY, EMO_BORED, EMO_SUSPICIOUS, EMO_LAUGHING, EMO_EYEROLL,
+  EMO_COUNT
 };
+
+// Mouth shapes, same order as docs/PROTOCOL.md (0 to 5). faces.bin also has a 7th frame per emotion
+// for the blink, which only the rotor uses.
+enum Viseme : uint8_t { VIS_CLOSED = 0, VIS_AH, VIS_OH, VIS_EE, VIS_OO, VIS_FV, VIS_COUNT };
 
 #pragma pack(push, 1)
 struct PacketHeader {
@@ -30,7 +37,7 @@ struct StatePacket {   // PKT_STATE
   PacketHeader hdr;
   uint8_t mode;        // Mode
   uint8_t emotion;     // Emotion
-  uint8_t mouth;       // 0 (closed) to 4 (wide open), from TTS loudness
+  uint8_t mouth;       // Viseme 0 to 5 (closed ah oh ee oo fv), from the laptop's lip sync
   int8_t  look;        // head turn in columns, negative = left
   uint8_t brightness;  // 0 to 255, firmware still enforces the LED current cap
   uint8_t crc;         // CRC-8 of everything before this byte

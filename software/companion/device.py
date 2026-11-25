@@ -6,10 +6,12 @@ Byte level format and examples: docs/PROTOCOL.md (keep it in sync with this file
 Laptop -> device   [0xA5, cmd, a, b, checksum]   checksum = (cmd + a + b) & 0xFF
   1 FACE (a = emotion index 0..11)   2 MOUTH (a = viseme index 0..5)   3 POWER (a = 0 sleep / 1 awake)
   4 PING   5 BRIGHTNESS (a = 0..255 cap)   6 SLEEP_ANIM (reserved)
-  7 SHOW_EMOTION_TEST (a = emotion index, device holds it for 3 s)
+  7 SHOW_EMOTION_TEST (a = emotion index, device holds it for 3 s)   8 LOOK (a = head turn in columns, signed)
 Device -> laptop   [0x5A, cmd, a, b, checksum]   same checksum
   1 PROXIMITY (a = 1 near / 0 far)   2 BUTTON   3 PONG   4 ROTOR_STATUS (a = 1 ok)
   5 BRIGHTNESS_ACK (a = cap now in force)
+  6 ROTOR_POWER (a = (battery mV - 2500) / 10, b = bit0 power good, bit1 charging)
+  7 ROTOR_SPIN (a, b = RPM high byte, low byte)
 
 SerialDevice keeps one IO thread that owns the port: it opens it, reads, writes the queue,
 pings every 2 s and declares the link down after 6 s of silence. Events reach the engine
@@ -23,8 +25,10 @@ log = logging.getLogger("hullabaloo.device")
 
 VISEMES = ["closed", "ah", "oh", "ee", "oo", "fv"]
 H_TX, H_RX = 0xA5, 0x5A                      # laptop -> device, device -> laptop
-CMD = {"FACE": 1, "MOUTH": 2, "POWER": 3, "PING": 4, "BRIGHTNESS": 5, "SLEEP_ANIM": 6, "TEST_EMOTION": 7}
-RX_CMD = {"PROXIMITY": 1, "BUTTON": 2, "PONG": 3, "ROTOR_STATUS": 4, "BRIGHTNESS_ACK": 5}
+CMD = {"FACE": 1, "MOUTH": 2, "POWER": 3, "PING": 4, "BRIGHTNESS": 5, "SLEEP_ANIM": 6, "TEST_EMOTION": 7, "LOOK": 8}
+RX_CMD = {"PROXIMITY": 1, "BUTTON": 2, "PONG": 3, "ROTOR_STATUS": 4, "BRIGHTNESS_ACK": 5, "ROTOR_POWER": 6, "ROTOR_SPIN": 7}
+TARGET_RPM = 1500
+BATTERY_EMPTY_MV, BATTERY_FULL_MV = 3300, 4200     # 1S LiPo, rough linear % for the health page
 CMD_NAME = {v: k for k, v in CMD.items()}
 RX_NAME = {v: k for k, v in RX_CMD.items()}
 ESP32S3_VID_PID = "303A:1001"                 # ESP32-S3 built in USB serial/JTAG
@@ -94,6 +98,8 @@ def describe_tx(cmd: int, a: int, b: int) -> str:
         return "POWER awake" if a else "POWER sleep"
     if n == "BRIGHTNESS":
         return f"BRIGHTNESS {a}"
+    if n == "LOOK":
+        return f"LOOK {a - 256 if a > 127 else a}"
     return n
 
 
@@ -105,7 +111,21 @@ def describe_rx(cmd: int, a: int, b: int) -> str:
         return "ROTOR ok" if a else "ROTOR fault"
     if n == "BRIGHTNESS_ACK":
         return f"BRIGHTNESS_ACK {a}"
+    if n == "ROTOR_POWER":
+        return f"ROTOR_POWER {battery_mv(a)} mV" + (" pgood" if b & 1 else "") + (" charging" if b & 2 else "")
+    if n == "ROTOR_SPIN":
+        return f"ROTOR_SPIN {(a << 8) | b} rpm"
     return n
+
+
+def battery_mv(a: int) -> int:
+    return 2500 + 10 * a
+
+
+def battery_pct(mv):
+    if mv is None:
+        return None
+    return max(0, min(100, round(100 * (mv - BATTERY_EMPTY_MV) / (BATTERY_FULL_MV - BATTERY_EMPTY_MV))))
 
 
 def decode_rx_event(cmd: int, a: int, b: int):
@@ -119,6 +139,10 @@ def decode_rx_event(cmd: int, a: int, b: int):
         return {"type": "rotor", "ok": bool(a)}
     if n == "BRIGHTNESS_ACK":
         return {"type": "brightness_ack", "value": a}
+    if n == "ROTOR_POWER":
+        return {"type": "rotor_power", "battery_mv": battery_mv(a), "power_good": bool(b & 1), "charging": bool(b & 2)}
+    if n == "ROTOR_SPIN":
+        return {"type": "rotor_spin", "rpm": (a << 8) | b}
     return None
 
 
@@ -168,6 +192,7 @@ class DeviceLink:
     def set_power(self, awake: bool): ...
     def set_brightness(self, cap: int): ...
     def test_emotion(self, emotion: str): ...
+    def set_look(self, cols: int): ...
     def play_audio(self, pcm: bytes, sample_rate: int): ...
     def reconnect(self): ...
     def close(self): ...
@@ -185,6 +210,8 @@ class SimDevice(DeviceLink):
         super().__init__()
         self.connected = True
         self.face, self.mouth, self.awake = "neutral", "closed", False
+        self.look = 0
+        self.t0 = time.time()
         self.log: List[tuple] = []
         self.audio_bytes = 0
         self.test_face = None
@@ -220,6 +247,20 @@ class SimDevice(DeviceLink):
         self.test_face = emotion
         self._tx("TEST_EMOTION", EMOTIONS.index(emotion))
         self._l("test_emotion", emotion)
+
+    def set_look(self, cols):
+        self.look = max(-100, min(100, int(cols)))
+        self._tx("LOOK", self.look & 255)
+
+    def status(self):
+        """The simulator makes up rotor numbers so the health page can be tried with no hardware."""
+        import math
+        t = time.time() - self.t0
+        mv = int(4150 - (t / 60) % 900)                       # drains about 1 mV a minute, then wraps
+        rpm = int(TARGET_RPM + 6 * math.sin(t / 3)) if self.awake else 0
+        return {**super().status(), "simulated": True, "rotor_ok": True, "battery_mv": mv, "battery_pct": battery_pct(mv),
+                "charging": False, "power_good": True, "rpm": rpm, "target_rpm": TARGET_RPM,
+                "rotor_seen_s": 0.5, "look": self.look}
 
     def play_audio(self, pcm, sample_rate):
         self.audio_bytes += len(pcm)
@@ -272,7 +313,9 @@ class SerialDevice(DeviceLink):
         self.parser = PacketParser(H_RX)
         self.stats = {"rx_packets": 0, "checksum_errors": 0, "dropped_bytes": 0, "tx_dropped": 0,
                       "link_ups": 0, "link_downs": 0, "opens": 0, "ping_ms": None, "last_error": None,
-                      "rotor_ok": None, "brightness_ack": None}
+                      "rotor_ok": None, "brightness_ack": None, "battery_mv": None, "charging": None,
+                      "power_good": None, "rpm": None}
+        self._rotor_seen = None
         if autostart:
             self.start()
 
@@ -326,6 +369,7 @@ class SerialDevice(DeviceLink):
         self._tx("BRIGHTNESS", self.brightness)
 
     def test_emotion(self, emotion): self._tx("TEST_EMOTION", EMOTIONS.index(emotion))
+    def set_look(self, cols): self._tx("LOOK", max(-100, min(100, int(cols))) & 255)
 
     def play_audio(self, pcm, sample_rate):
         pass  # audio goes out the base's USB sound card via the OS audio device, not this serial port
@@ -425,6 +469,12 @@ class SerialDevice(DeviceLink):
                 self.stats["rotor_ok"] = bool(a)
             elif cmd == RX_CMD["BRIGHTNESS_ACK"]:
                 self.stats["brightness_ack"] = a
+            elif cmd == RX_CMD["ROTOR_POWER"]:
+                self.stats.update(battery_mv=battery_mv(a), power_good=bool(b & 1), charging=bool(b & 2))
+                self._rotor_seen = self._clock()
+            elif cmd == RX_CMD["ROTOR_SPIN"]:
+                self.stats["rpm"] = (a << 8) | b
+                self._rotor_seen = self._clock()
             ev = decode_rx_event(cmd, a, b)
             if ev:
                 self._emit(ev)
@@ -458,9 +508,11 @@ class SerialDevice(DeviceLink):
             log.exception("device event handler failed")
 
     def status(self) -> dict:
+        seen = None if self._rotor_seen is None else round(self._clock() - self._rotor_seen, 1)
         return {"kind": self.kind, "connected": self._up, "port": self.port, "port_open": self.s is not None,
                 "baud": self.baud, "port_setting": self.port_pref, "brightness_cap": self.brightness,
-                "tx_packets": self.tx_count, **self.stats}
+                "tx_packets": self.tx_count, **self.stats, "battery_pct": battery_pct(self.stats["battery_mv"]),
+                "target_rpm": TARGET_RPM, "rotor_seen_s": seen, "simulated": False}
 
 
 def _open_real_port(port: str, baud: int):

@@ -174,13 +174,26 @@ class KokoroTTS(TTS):
         from kokoro import KPipeline
         self.device = device
         self.p = KPipeline(lang_code=lang, repo_id=repo_id, device=device)
+        self.lang, self.repo_id = lang, repo_id
+        self.pipes = {lang: self.p}        # British voices (bf_ / bm_) get a British pipeline, sharing the model
         self.timestamps_seen = None        # True/False after the first call
+
+    def _pipe(self, voice):
+        want = "b" if voice[:1] == "b" else "a"
+        if want not in self.pipes:
+            from kokoro import KPipeline
+            try:
+                self.pipes[want] = KPipeline(lang_code=want, repo_id=self.repo_id, model=self.p.model)
+            except Exception as ex:                  # missing British G2P data: American pronunciation, same voice
+                log.warning("kokoro %s pipeline failed (%s), using %s", want, ex, self.lang)
+                self.pipes[want] = self.p
+        return self.pipes[want]
 
     def speak(self, text, voice, speed):
         chunks, phs, times, wts = [], [], [], []
         offset = 0.0
         have_ts = True
-        for res in self.p(text, voice=voice, speed=speed):
+        for res in self._pipe(voice)(text, voice=voice, speed=speed):
             a = res.audio
             a = a.detach().cpu().numpy() if hasattr(a, "detach") else np.asarray(a)
             a = a.astype(np.float32).reshape(-1)

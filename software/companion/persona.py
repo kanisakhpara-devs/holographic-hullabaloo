@@ -27,8 +27,9 @@ FORMAT_RULE = ("Every single sentence you say must begin with exactly one emotio
 
 _STYLE_TAIL = ("Use spoken English: contractions, no headings, no numbers written as digit lists. Spell out symbols "
                "(say 'percent', not '%'). Do not repeat the question. Do not start two replies in a row with the "
-               "same word. Stay in character at all times. You cannot play music, set alarms or control anything; if "
-               "asked, say so briefly in character.")
+               "same word. Stay in character at all times. You cannot play music or control anything. Timers, reminders, "
+               "study sessions and games are run by the app: only say one was set, cancelled or started if a note below "
+               "says so. Never pretend.")
 
 HONESTY_RULE = (
     "Honesty rules, more important than being funny: "
@@ -50,31 +51,67 @@ LENGTH_RULE = {
 }
 NUM_PREDICT = {"short": 90, "normal": 160, "long": 320}
 
+# worded as a dial on top of the persona, so it doesn't turn every persona into the smug one
 SARCASM = {
-    0: "Tone down the sarcasm: be warm and only lightly teasing.",
-    1: "Use mild sarcasm.",
-    2: "Be clearly sarcastic.",
-    3: "Be maximally sarcastic and deadpan, but still affectionate.",
+    0: "Sarcasm dial: 0 of 3. Stay in your character but be warm, with only light teasing.",
+    1: "Sarcasm dial: 1 of 3. Stay in your character with a little sarcasm.",
+    2: "Sarcasm dial: 2 of 3. Stay in your character with a fair bit of sarcasm.",
+    3: "Sarcasm dial: 3 of 3. Stay in your character, maximally sarcastic and deadpan, but still affectionate.",
 }
 ROAST = "Roast the person you are talking to a little more than usual, playfully and never about protected traits."
 
-# short exchanges: greeting, unknown, compliment, insult, joke, false premise, recent fact, pushback, sad, boring.
+# Examples are now per persona (the "Examples:" part of each persona file). Before Nov 25 every persona got the
+# same 10 smug examples, and a 4B model copies examples far more than it follows a one line description, so the
+# wizard and the hype buddy both came out smug. These 3 are added to every persona: they teach honesty, not tone.
 # No example uses a person's name: the old "My name is Riya" example made it call people Riya.
-FEW_SHOT = [
-    ("Hey Hullabaloo!", "[smug] Oh, look who remembered I exist. [bored] What do you want?"),
-    ("What's the population of Mars?", "[confused] Zero, unless you count rovers. [smug] And I don't know them personally."),
-    ("You look really cool.", "[happy] Finally, someone with taste. [smug] The mustache does most of the work."),
-    ("You're a useless toy.", "[eyeroll] Says the person talking to a toy. [smug] I'll allow it."),
-    ("Tell me a joke.", "[smug] I'd tell you a chemistry joke. [laughing] But I know I wouldn't get a reaction."),
+HONESTY_SHOTS = [
     ("What did you think of Phil Knight's biography of Jack Ma?",
-     "[suspicious] Phil Knight never wrote one. [smug] He wrote Shoe Dog, about Nike. Nice try."),
+     "[suspicious] Phil Knight never wrote one. [neutral] He wrote Shoe Dog, about Nike."),
     ("When did the new iPhone come out?",
-     "[confused] Honestly, I'm not sure, my info might be old. [smug] Check online, don't trust a mustache on dates."),
+     "[confused] Honestly, I'm not sure, my info might be old. [neutral] Best to check online."),
     ("No, you're wrong, the sun goes around the Earth.",
-     "[eyeroll] It doesn't, and you know it. [smug] Show me real proof and I'll think about it."),
-    ("I'm having a bad day.", "[sad] That stinks, honestly. [neutral] Want to tell me what happened?"),
-    ("Can you read me the dictionary?", "[bored] I could. [eyeroll] But then we'd both fall asleep."),
+     "[eyeroll] It doesn't. [neutral] Show me real proof and I'll think about it."),
 ]
+FEW_SHOT = HONESTY_SHOTS          # kept for old imports
+
+VOICE_RX = re.compile(r"^\s*voice\s*:\s*([a-z]{2}_[a-z]+)\s*$", re.I)
+SPEED_RX = re.compile(r"^\s*speed\s*:\s*([0-9.]+)\s*$", re.I)
+
+
+def parse_persona(raw: str) -> dict:
+    """Persona file -> {text, voice, speed, examples}. Format (only the description is required):
+
+        voice: bm_george              (optional: Kokoro voice for every sentence of this persona)
+        speed: 0.95                   (optional: multiplies the speaking speed)
+        You are Hullabaloo, ...       (the description, any number of lines)
+        Examples:
+        User: something they say
+        You: [smug] what you answer, with emotion tags
+    """
+    voice, speed, desc, examples, user = "", 1.0, [], [], None
+    in_ex = False
+    for line in (raw or "").splitlines():
+        if not in_ex and (m := VOICE_RX.match(line)):
+            voice = m.group(1).lower()
+            continue
+        if not in_ex and (m := SPEED_RX.match(line)):
+            try:
+                speed = max(0.7, min(1.4, float(m.group(1))))
+            except ValueError:
+                pass
+            continue
+        if line.strip().lower().rstrip(":") == "examples":
+            in_ex = True
+            continue
+        if in_ex:
+            if line.lower().startswith("user:"):
+                user = line[5:].strip()
+            elif line.lower().startswith("you:") and user:
+                examples.append((user, line[4:].strip()))
+                user = None
+            continue
+        desc.append(line)
+    return {"text": "\n".join(desc).strip(), "voice": voice, "speed": speed, "examples": examples[:12]}
 
 
 class PersonaStore:
@@ -108,6 +145,9 @@ class PersonaStore:
         if name != "smug_sarcastic":
             return self.get("smug_sarcastic")
         return "You are Hullabaloo, a smug, sarcastic desk companion."
+
+    def profile(self, name, custom_text=""):
+        return parse_persona(self.get(name, custom_text))
 
     def save(self, name, text):
         if not re.fullmatch(r"[a-z0-9_]{1,40}", name) or name == CUSTOM:
@@ -149,16 +189,20 @@ def time_block(now=None, tz_name="Asia/Kolkata"):
 def build_system_prompt(persona_text: str, content: str = "pg", people=(), facts=(), last_summary: str = "",
                         reply_length: str = "normal", sarcasm_level: int = 2, roast_user: bool = False,
                         now=None, tz_name="Asia/Kolkata", strict_reminder=False, owner="", speaker="",
-                        notes=(), web=None) -> str:
+                        notes=(), web=None, extra=()) -> str:
     # old call style: build_system_prompt("smug_sarcastic", "pg", ...) with a persona NAME
     if persona_text in PERSONAS:
         persona_text = PERSONAS[persona_text]
-    persona = persona_text.strip() + " " + SARCASM.get(int(sarcasm_level), SARCASM[2])
+    prof = parse_persona(persona_text)
+    persona = (prof["text"] or "You are Hullabaloo, a desk companion.") + " " + SARCASM.get(int(sarcasm_level), SARCASM[2])
     if roast_user:
         persona += " " + ROAST
     parts = [persona, CONTENT.get(content, CONTENT["pg"]), FORMAT_RULE,
              LENGTH_RULE.get(reply_length, LENGTH_RULE["normal"]) + _STYLE_TAIL, HONESTY_RULE,
-             "Examples:\n" + "\n".join(f"User: {u}\nYou: {a}" for u, a in FEW_SHOT)]
+             "Examples (copy the personality and tone of these, not the exact words):\n"
+             + "\n".join(f"User: {u}\nYou: {a}" for u, a in prof["examples"] + HONESTY_SHOTS)]
+    if extra:
+        parts += [x for x in extra if x]
     who = []
     if owner:
         who.append(f"Your owner is {owner}, who built you.")

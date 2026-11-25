@@ -2,7 +2,7 @@
 /* Settings page. Every one of the 39 settings keys has a control carrying data-k="<key>".
    Controls send {type:"settings", patch:{key:value}} over the WebSocket; the backend validates and
    answers with the full settings (or an error event), so the UI always ends up showing the truth. */
-const CATS = ["Persona", "Answers", "Voice & wake", "Audio", "Emotions", "Privacy", "Appearance", "Device", "System", "Developer", "About"];
+const CATS = ["Persona", "Answers", "Voice & wake", "Routines", "Audio", "Emotions", "Privacy", "Appearance", "Device", "Health", "System", "Developer", "About"];
 const H = {   /* one line helper text per key (the backend schema text wins when it is loaded) */
   persona: "Who Hullabaloo is. Files live in the personas folder.", custom_persona_text: "Your own persona, used when the persona is 'custom'. Max 1200 characters.",
   content: "The device itself always starts in PG. Unfiltered is only ever set here and resets on restart or reconnect.",
@@ -86,13 +86,14 @@ async function loadCat() {
   if (c === "Audio") { const r = await api("/api/devices/audio"); if (r.ok && r.data) S.audio = r.data; }
   if (c === "Emotions") { const r = await api("/api/emotion_map"); if (r.ok) S.emap = r.data; }
   if (c === "Privacy") { const i = await api("/api/transcript/info"); if (i.ok) S.tinfo = i.data; await loadMem(); }
-  if (c === "Device" || c === "Developer") { await pollDevice(true); pollT = setInterval(() => pollDevice(false), 1000); }
+  if (c === "Device" || c === "Developer" || c === "Health") { await pollDevice(true); pollT = setInterval(() => pollDevice(false), 1000); }
+  if (c === "Routines") await loadExtras();
   if (c === "System" || c === "About") { const h = await api("/api/health"); if (h.ok) S.health = h.data; }
   if (S.page === "settings" && S.cat === c) refresh();
 }
 let pollN = 0;
 async function pollDevice(first) {
-  if (S.page !== "settings" || (S.cat !== "Device" && S.cat !== "Developer")) { stopPolling(); return; }
+  if (S.page !== "settings" || (S.cat !== "Device" && S.cat !== "Developer" && S.cat !== "Health")) { stopPolling(); return; }
   const p = await api("/api/device/packets"); if (p.ok && p.data) S.packets = p.data.packets || [];
   const st = await api("/api/device/status"); if (st.ok) S.device = st.data;
   if (first || ++pollN % 3 === 0) { const h = await api("/api/health"); if (h.ok) S.health = h.data; }
@@ -106,6 +107,7 @@ function paintDevice() {     /* update the live parts in place (no full rebuild,
   const vr = $("#vram"); if (vr) vr.innerHTML = vramHtml();
   const lk = $("#linkstate"); if (lk) lk.innerHTML = linkHtml();
   const stx = $("#selftxt"); if (stx) stx.textContent = selftestText();
+  if (window.paintHealth) paintHealth();
 }
 
 function settingsBody() {
@@ -118,6 +120,8 @@ function settingsBody() {
     case "Privacy": return pagePrivacy();
     case "Appearance": return pageAppearance();
     case "Device": return pageDevice();
+    case "Routines": return pageRoutines();
+    case "Health": return pageHealth();
     case "System": return pageSystem();
     case "Developer": return pageDeveloper();
     default: return pageAbout();
@@ -171,6 +175,7 @@ function pageVoice() {
     + row("Microphone", "mic_mode", sel("mic_mode", [["off", "Off"], ["hotkey", "Hotkey only"], ["wake", "Hotkey + wake word"]]), " Also on Home.")
     + `<div class="note" id="wakestat">Wake word: ${esc((S.wake && S.wake.phrase) || "hey jarvis")}. Status: ${esc((S.wake && S.wake.message) || "off")}.</div>`
     + row("Wake word sensitivity", "wake_word_sensitivity", rng("wake_word_sensitivity", 0, 1, 0.05, "pct"))
+    + wakeHelpHtml()
     + row("Push to talk key", "ptt_hotkey", hotkey("ptt_hotkey"))
     + row("End of sentence silence", "vad_silence_ms", rng("vad_silence_ms", 200, 3000, 50, "ms"))
     + row("Go to sleep after", "idle_timeout_s", rng("idle_timeout_s", 5, 300, 5, "sec"));

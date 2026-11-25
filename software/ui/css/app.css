@@ -455,3 +455,28 @@ select.pill,#since,.emorow select,#sbody select,#drawer select{appearance:none;-
  background-repeat:no-repeat;background-position:right 16px center;background-size:22px 22px;padding-right:52px}
 #stage.glass select.pill,#stage.glass #since,#stage.glass .emorow select,#stage.glass #sbody select,#stage.glass #drawer select{
  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M5 9l7 7 7-7' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+
+/* ---------- Nov 25: activity strip on Home (timers, study, game), Health tiles, small forms ---------- */
+.acts{flex:none;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:calc(22px*var(--z,1))}
+.act{display:inline-flex;align-items:center;gap:8px;padding:5px 8px 5px 16px;border-radius:24px;background:var(--card);white-space:nowrap}
+.act b{font-weight:600}
+.act.study.focus{background:#cfe6d2}.act.study.break{background:#f0e4b8}.act.game{background:#d9d2f0}.act.night{background:#c9d3e6;padding-right:16px}
+.act.music{background:#f3d6e6;padding-right:16px}
+.act .cd{font-variant-numeric:tabular-nums}
+.act .x{border:0;background:rgba(0,0,0,.08);border-radius:50%;width:1.4em;height:1.4em;line-height:1.3em;cursor:pointer;font:inherit;padding:0}
+.addacts{display:inline-flex;gap:6px}.addacts .pill.mini{margin-left:0}
+#face{transition:transform .12s ease-out}
+.htiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:6px 0 14px}
+.htile{background:var(--card);border-radius:22px;padding:14px 18px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.htile small{font-size:calc(18px*var(--z,1));opacity:.6}
+.htile b{font-size:calc(34px*var(--z,1));font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.htile span{font-size:calc(18px*var(--z,1));opacity:.7}
+.htile.ok{background:#cfe6d2}.htile.warn{background:#f0e4b8}.htile.bad{background:#f3c7c0}
+.htile .nd{opacity:.45;font-weight:400;font-size:.7em}
+.mform{display:flex;flex-direction:column;gap:14px;margin-top:16px;font-size:calc(24px*var(--z,1))}
+.mform label{display:flex;gap:14px;align-items:center}
+.mform input[type=text],.mform input[type=number]{font:inherit;border:0;border-radius:18px;padding:8px 14px;background:#d3e0cb;flex:1}
+input[type=time]{font:inherit;font-size:calc(26px*var(--z,1));border:0;border-radius:18px;padding:6px 14px;background:var(--card)}
+#stage.glass .act,#stage.glass .htile{background-color:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3)}
+/* 13 settings categories since Nov 25: a bit tighter so they all fit without scrolling */
+.cat{height:54px;margin-bottom:6px;font-size:calc(27px*var(--z,1))}

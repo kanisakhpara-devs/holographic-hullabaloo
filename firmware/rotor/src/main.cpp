@@ -27,7 +27,9 @@ void loop() {
   uint32_t now = millis();
   // TODO: if no base packet for HEARTBEAT_TIMEOUT_MS, run the local idle face
   face_update(now);
-  led_power(hall_spinning());
+  bool spinning = hall_spinning();
+  if (!spinning) fb_swap();   // LEDs are off, so swap now. While spinning the Hall pulse does it (no tearing)
+  led_power(spinning);
   digitalWrite(PIN_STATUS_LED, (now / 500) % 2);  // slow blink = alive
   delay(1);
 }

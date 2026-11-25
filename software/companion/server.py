@@ -260,6 +260,74 @@ def create_app(stt, llm, tts, device, db="companion.db", realtime=1.0, token=Non
     def device_status():
         return E().dev.status()
 
+    @app.get("/api/extras")
+    def extras_status():
+        e = E()
+        ms = e.music_status() if hasattr(e, "music_status") else {"ok": False, "message": "off"}
+        return {**e.extras_status(), "music_status": ms}
+
+    @app.post("/api/timers")
+    async def add_timer(request: Request):
+        body = await _json(request)
+        try:
+            secs = float(body.get("minutes", 0)) * 60
+            if not 0 < secs <= 7 * 86400:
+                raise ValueError("minutes must be more than 0 and at most a week")
+            t = E().timers.add("reminder" if body.get("kind") == "reminder" else "timer", secs, str(body.get("label", ""))[:80])
+        except (TypeError, ValueError) as ex:
+            raise HTTPException(422, str(ex))
+        E()._emit_extras()
+        return t
+
+    @app.delete("/api/timers/{tid}")
+    def cancel_timer(tid: int):
+        gone = E().timers.cancel(tid)
+        E()._emit_extras()
+        return {"ok": bool(gone)}
+
+    @app.post("/api/study")
+    async def study(request: Request):
+        body = await _json(request)
+        e = E()
+        if body.get("action") == "stop":
+            e.study.stop()
+        else:
+            mins = int(body.get("focus_min") or e.settings["study_focus_min"])
+            if not 1 <= mins <= 120:
+                raise HTTPException(422, "focus_min must be 1 to 120")
+            e.study.start(str(body.get("subject", ""))[:40].strip().lower(), mins, e.settings["study_break_min"])
+            e.game.stop()
+        e._emit_extras()
+        return {"study": e.study.status()}
+
+    @app.post("/api/game")
+    async def game(request: Request):
+        from .extras import GAMES
+        body = await _json(request)
+        e = E()
+        if body.get("action") == "stop" or not body.get("game"):
+            e.game.stop()
+        else:
+            if body["game"] not in GAMES:
+                raise HTTPException(422, "game must be one of " + ", ".join(GAMES))
+            e.game.start(body["game"], str(body.get("topic", ""))[:40])
+            e.queue_event(f"The person pressed the button to start {GAMES[body['game']]}. Explain it in one sentence and begin.")
+        e._emit_extras()
+        return {"game": e.game.status()}
+
+    @app.post("/api/wakeword/folder")
+    def wakeword_folder():
+        """Open the folder a custom wake word model goes in (Windows Explorer)."""
+        from .paths import p as data_path
+        d = data_path("wakeword")
+        os.makedirs(d, exist_ok=True)
+        try:
+            if hasattr(os, "startfile"):
+                os.startfile(d)
+        except OSError:
+            pass
+        return {"folder": d}
+
     @app.get("/api/device/packets")
     def device_packets(n: int = 100):
         return {"packets": E().dev.packets(n)}
@@ -647,6 +715,19 @@ def real_runtime(data_dir, mock=False):
         ensure_wake()
         sync_mic(False)
 
+        def sync_music():
+            """Music reactions: a loopback listener runs only while the setting is on."""
+            from .music import MusicListener
+            if eng.settings["music_react"]:
+                if not state.get("music"):
+                    state["music"] = MusicListener(eng)
+                state["music"].start()
+            elif state.get("music"):
+                state["music"].stop()
+        eng.music_status = lambda: state["music"].status if state.get("music") else {"ok": False, "message": "off"}
+        sync_music()
+        state.setdefault("closers", []).append(lambda: state.get("music") and state["music"].stop())
+
         def hook(applied):
             if eng.audio is not None and hasattr(eng.audio, "volume"):
                 if "volume" in applied:
@@ -670,6 +751,10 @@ def real_runtime(data_dir, mock=False):
                     eng.emit({"type": "wake_status", **eng.wake_status})
                 ensure_wake()
                 sync_mic()
+            if "music_react" in applied:
+                sync_music()
+            if "music_sensitivity" in applied and state.get("music"):
+                state["music"].det.set_sensitivity(applied["music_sensitivity"])
             if {"llm_model", "ollama_url"} & set(applied) and hasattr(eng.llm, "keep_alive"):
                 from .adapters.real import OllamaLLM
                 eng.llm = OllamaLLM(eng.settings["llm_model"], eng.settings["ollama_url"])

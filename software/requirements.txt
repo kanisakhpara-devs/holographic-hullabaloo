@@ -29,4 +29,5 @@ nvidia-cublas-cu12==12.9.2.10
 nvidia-cuda-nvrtc-cu12==12.9.86
 # English model that misaki (Kokoro's text front end) loads; without it the backend tries to download it at startup
 en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+soundcard==0.4.6            # music reactions: listens to the speaker output (WASAPI loopback), optional
 pytest==9.2.0

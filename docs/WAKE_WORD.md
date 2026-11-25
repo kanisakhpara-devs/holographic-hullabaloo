@@ -16,10 +16,26 @@ melspectrogram.onnx, embedding_model.onnx and hey_jarvis_v0.1.onnx (a few MB, fr
 releases) into `%APPDATA%\HolographicHullabaloo\wakeword\oww\`. After that it works offline.
 Status shows in Settings, Voice and wake, and on Home.
 
-The stock phrase is **"hey jarvis"**. For **"hey hullabaloo"**: train a model with the openWakeWord automatic
-training notebook (linked from the openWakeWord GitHub README, "Training New Models"; it uses synthetic speech,
-no recordings needed), export the `.onnx`, name it `hey_hullabaloo.onnx`, and put it in
-`%APPDATA%\HolographicHullabaloo\wakeword\`. The app uses it instead of hey jarvis.
+The stock phrase is **"hey jarvis"**.
+
+## Making "hey hullabaloo" (step by step)
+The app already loads any custom model you drop in the wake word folder; you just have to train one.
+openWakeWord's README links a Google Colab notebook ("Training New Models", the "Google Colab" link) that makes a
+basic model in under an hour. It makes its own training clips with synthetic speech, so you don't record anything.
+
+1. Open the openWakeWord GitHub page, scroll to "Training New Models" and open the Google Colab link.
+2. In Colab: Runtime, Change runtime type, pick a GPU (the free T4 is fine).
+3. Enter the phrase where the notebook asks for the wake word. Spell it how it sounds, so the speech generator says it
+   right; try `hey hullabaloo` first, and `hey hulla baloo` if the first model misses it a lot.
+4. Run all cells and wait. Keep the tab open, Colab stops if you close it.
+5. Download the `.onnx` file it makes at the end. Rename it `hey_hullabaloo.onnx`.
+6. In the app: Settings, Voice and wake, Custom wake word, **Open folder**. Put the file in that folder
+   (`%APPDATA%\HolographicHullabaloo\wakeword\`). Keep only one `.onnx` there, the app takes the first one.
+7. Switch the mic to Off and back to Hotkey + wake word. Home should now say "Say hey hullabaloo".
+8. Test from across the room. Too many false wakes: lower the sensitivity. Misses: raise it, or retrain with
+   the other spelling.
+
+Write down in the journal that the model was trained with the openWakeWord notebook.
 
 Sensitivity (0 to 1) maps to a detection threshold of 1.0 down to 0.1. Start at 0.5.
 The pretrained models have a non-commercial license: fine for this project, check before selling anything.

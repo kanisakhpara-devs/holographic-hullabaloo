@@ -23,7 +23,9 @@ const DEFAULTS = {
   lipsync_offset_ms: 0, voice_overrides: {}, emotion_map: {}, device_mode: "sim", serial_port: "",
   device_brightness_cap: 255, llm_model: "gemma3:4b", ollama_url: "http://127.0.0.1:11434", stt_model: "small",
   stt_device: "cuda", tts_device: "cpu", timezone: "Asia/Kolkata", autostart: false, start_minimized: false,
-  tray_icon: true, log_level: "info", ui_scale: 1.0, ui_animations: true, ui_theme: "classic"
+  tray_icon: true, log_level: "info", ui_scale: 1.0, ui_animations: true, ui_theme: "classic",
+  proximity_greet: false, greet_cooldown_min: 10, night_sleep: false, night_start: "23:00", night_end: "07:00",
+  study_focus_min: 25, study_break_min: 5, study_quiz: true, music_react: false, music_sensitivity: 0.5
 };
 
 const S = {
@@ -208,7 +210,11 @@ function onEvent(e) {
         device: e.device || S.device, personas: e.personas || S.personas, wake: e.wake_status || S.wake });
       Object.assign(S.settings, e.settings || {});
       if (e.diagnostics) { S.latencies = (e.diagnostics.latencies || []).slice(-20); S.counters = e.diagnostics.counters || {}; S.lastInterrupt = e.diagnostics.last_interrupt_ms; }
+      if (window.extrasEvent) extrasEvent(e);
       fit(); break;
+    case "extras": case "music_status": case "look": case "device_rotor_power": case "device_rotor_spin":
+      if (window.extrasEvent) extrasEvent(e);
+      return;
     case "state":
       S.state = e.state; S.connected = e.state !== "disconnected";
       if (e.state === "sleeping" || e.state === "disconnected") { S.say = ""; stopSubs(); }
@@ -293,7 +299,7 @@ function connect() {
   let ok = false;
   ws.onopen = () => {
     ok = true; S.backend = true; S.booting = false; S.say = "";
-    loadUsage(); loadSchema(); checkSetup();
+    loadUsage(); loadSchema(); checkSetup(); if (window.loadExtras) loadExtras();
     if (S.page === "home") paintState();
   };
   ws.onmessage = m => { let e; try { e = JSON.parse(m.data); } catch (x) { return; } onEvent(e); };

@@ -23,7 +23,7 @@ from .adapters.base import NullAudioOut
 log = logging.getLogger("hullabaloo.engine")
 
 from .settings import Settings, DEFAULTS
-from . import learn, websearch
+from . import learn, websearch, extras
 
 # STT outputs Whisper invents on silence/noise
 HALLUCINATIONS = {"thanks for watching", "thank you for watching", "you", "thank you", "bye", "subtitles by",
@@ -77,6 +77,14 @@ class Engine:
         self._selftest_stop = False
         self._selftest_running = False
         self.mic_test = False           # wizard: transcribe utterances and report them, no reply
+        # timers, study buddy, games, night hours, proximity greetings, music (see extras.py / music.py)
+        self.timers = extras.Timers(memory)
+        self.study = extras.Study()
+        self.game = extras.Game()
+        self._events = collections.deque(maxlen=10)    # app events waiting to be spoken (timer done, break...)
+        self._night = False
+        self._last_greet = 0.0
+        self.music = {"on": False, "level": 0.0}
         self._apply_live(dict(self.settings))
         device.on_event = self._on_device_event_ts
         self.dev.set_power(self.sm.state not in (State.SLEEPING, State.DISCONNECTED))
@@ -88,6 +96,8 @@ class Engine:
 
     def _on_state(self, old, new):
         self.emit({"type": "state", "state": new.value, "prev": old.value})
+        if getattr(self, "music", {}).get("look"):
+            self._look(0)                         # stop bobbing the moment a conversation starts
         if old == State.SPEAKING and new == State.LISTENING:
             self._schedule_face_return()      # face holds the last emotion, then neutral
         elif new != State.SPEAKING:
@@ -150,8 +160,18 @@ class Engine:
                 self.dev.set_brightness(self.settings["device_brightness_cap"])
                 self._face(self.state_face[self.sm.state])
                 self.emit({"type": "settings", "settings": dict(self.settings)})
-        elif t == "proximity" and e.get("near") and self.settings["proximity_wake"]:
-            self.wake("proximity")
+        elif t == "proximity":
+            self.emit({"type": "proximity", "near": bool(e.get("near"))})
+            if e.get("near") and not self._night:
+                if self.settings["proximity_greet"] and time.time() - self._last_greet > self.settings["greet_cooldown_min"] * 60 \
+                        and self.sm.state in (State.SLEEPING, State.LISTENING):
+                    self._last_greet = time.time()
+                    self.queue_event("Someone just came up close to you (the proximity sensor saw them). Greet them in "
+                                     "character in one short sentence. Do not guess who it is.")
+                elif self.settings["proximity_wake"]:
+                    self.wake("proximity")
+        elif t in ("rotor_power", "rotor_spin"):
+            self.emit({**e, "type": "device_" + t})
         elif t == "button":
             self.button()
         elif t in ("rotor", "brightness_ack"):
@@ -180,6 +200,8 @@ class Engine:
             log.debug("warm failed: %s", ex)
 
     def wake_word_heard(self):
+        if self._night and self.sm.state == State.SLEEPING:
+            return                                   # night hours: only the button, hotkey or typing wake it
         if self.settings.get("mic_mode") == "wake" and self.sm.state in (State.SLEEPING, State.LISTENING):
             self.wake("wake_word")
 
@@ -258,7 +280,19 @@ class Engine:
     def speech_for(self, emo):
         if emo == WHISPER:                        # slower, a beat before, based on the suspicious style
             return {**self.speech_for("suspicious"), "speed": 0.9, "pause_ms": 300, "whisper": True}
-        return {**self.speech.get(emo), **self.settings["voice_overrides"].get(emo, {})}
+        st = dict(self.speech.get(emo))
+        prof = self.persona_profile()
+        if prof["voice"]:
+            st["voice"] = prof["voice"]              # one voice per persona, for every emotion
+        st["speed"] = st["speed"] * prof["speed"]
+        return {**st, **self.settings["voice_overrides"].get(emo, {})}
+
+    def persona_profile(self):
+        s = self.settings
+        key = (s["persona"], s["custom_persona_text"])
+        if getattr(self, "_prof_key", None) != key:
+            self._prof_key, self._prof = key, self.personas.profile(*key)
+        return self._prof
 
     async def preview(self, text, emotion):
         """Settings 'Preview' button: speak one line in an emotion and show the face."""
@@ -289,7 +323,8 @@ class Engine:
             self.mem.people()[:8], self.mem.facts(limit=12), self.mem.summary() if mode == "debug" else "",
             reply_length=s["reply_length"], sarcasm_level=s["sarcasm_level"], roast_user=s["roast_user"],
             tz_name=s["timezone"], strict_reminder=strict, owner=s.get("owner_name", ""),
-            speaker=self.speaker or "", notes=self.turn_notes, web=self.turn_web)
+            speaker=self.speaker or "", notes=self.turn_notes, web=self.turn_web,
+            extra=(self.study.prompt_block(), self.game.prompt_block()))
 
     def llm_options(self):
         return {"temperature": float(self.settings["temperature"]), "top_p": 0.95, "repeat_penalty": 1.1,
@@ -425,10 +460,15 @@ class Engine:
         if self._extract_task and not self._extract_task.done():
             self._extract_task.cancel()          # the GPU is needed for the reply now
         mode = self.settings["privacy_mode"]
-        self.mem.log("user", user_text, mode=mode)
-        self.emit({"type": "transcript", "role": "user", "text": user_text})
-        self._learn(user_text)
-        await self._maybe_search(user_text)
+        event = source == "event"                 # the app speaking up (timer done, break...), not the person
+        if event:
+            self.turn_notes, self.turn_web = [], None
+        else:
+            self.mem.log("user", user_text, mode=mode)
+            self.emit({"type": "transcript", "role": "user", "text": user_text})
+            self._learn(user_text)
+            self._commands(user_text)
+            await self._maybe_search(user_text)
         usage_row = self.mem.log_usage()
         heard_s = getattr(self, "_last_utt_s", 0.0) if source != "text" else 0.0
         self._last_utt_s = 0.0
@@ -667,6 +707,10 @@ class Engine:
             if time.time() - last_purge >= 60:
                 self.mem.purge_old()
                 last_purge = time.time()
+            try:
+                await self._tick_extras()
+            except Exception:
+                log.exception("timers / study / night tick failed")
 
     def set_settings(self, patch: dict, from_ui: bool = False):
         """Validate + apply. Returns {key: error} for rejected keys (empty if all fine)."""
@@ -685,6 +729,8 @@ class Engine:
         return errors
 
     def _apply_live(self, applied):
+        if {"persona", "custom_persona_text"} & set(applied) and hasattr(self, "history"):
+            self.history = []           # old replies in the old voice made the model keep talking like the old persona
         if applied.get("owner_name"):                 # facts saved as "you" before the name was set
             self.mem.rename_person("you", applied["owner_name"])
         if applied.get("privacy_mode") == "faire":
@@ -792,4 +838,188 @@ class Engine:
                 "facts": self.mem.facts(limit=20), "emotions": EMOTIONS,
                 "device_connected": self.dev.connected, "device": self.dev.status(), "personas": self.personas.names(),
                 "diagnostics": self.diagnostics(),
-                "wake_status": getattr(self, "wake_status", {"ok": False, "message": "off", "phrase": ""})}
+                "wake_status": getattr(self, "wake_status", {"ok": False, "message": "off", "phrase": ""}),
+                "extras": self.extras_status()}
+
+    # ---------- timers, study buddy, games, night hours (extras.py)
+    def _now_local(self):
+        try:
+            from zoneinfo import ZoneInfo
+            from datetime import datetime
+            return datetime.now(ZoneInfo(self.settings["timezone"]))
+        except Exception:
+            from datetime import datetime
+            return datetime.now()
+
+    def extras_status(self):
+        return {"timers": self.timers.active(), "study": self.study.status(), "game": self.game.status(),
+                "night": self._night, "music": dict(self.music), "now": time.time()}
+
+    def _emit_extras(self):
+        self.emit({"type": "extras", **self.extras_status()})
+
+    def _commands(self, text):
+        """Timer, study and game commands in what they said. Adds notes, so the reply says what really happened."""
+        notes = self.turn_notes
+        changed = False
+        cmd = extras.parse_timer_command(text, self._now_local().replace(tzinfo=None))
+        if cmd and cmd[0] == "add":
+            _, kind, secs, label = cmd
+            try:
+                t = self.timers.add(kind, secs, label)
+                notes.append(f"The app set a {kind}" + (f" for '{label}'" if label else "")
+                             + f", going off in {extras.fmt_duration(secs)}. Confirm it briefly.")
+                changed = True
+            except ValueError as ex:
+                notes.append(f"The app could NOT set the {kind}: {ex}. Say so.")
+        elif cmd and cmd[0] == "cancel":
+            gone = self.timers.cancel(cmd[1])
+            notes.append(("Cancelled: " + "; ".join(self.timers.describe(t) for t in gone) + ".") if gone
+                         else "They asked to cancel a timer or reminder, but none matched, so nothing was cancelled. Say so.")
+            changed = changed or bool(gone)
+        elif cmd and cmd[0] == "list":
+            act = self.timers.active()
+            notes.append(("Running timers and reminders: " + "; ".join(self.timers.describe(t) for t in act) + ".") if act
+                         else "There are no timers or reminders running. Say so.")
+        sc = extras.parse_study_command(text)
+        if sc and sc[0] == "start" and not self.study.active:
+            _, subj, mins = sc
+            f = mins or self.settings["study_focus_min"]
+            self.study.start(subj, f, self.settings["study_break_min"])
+            notes.append(f"The app started a study session" + (f" on {subj}" if subj else "")
+                         + f": {f} minutes of focus, then a {self.settings['study_break_min']} minute break. "
+                         "Cheer them on in one sentence and tell them to start.")
+            self.game.stop()
+            changed = True
+        elif sc and sc[0] == "stop" and self.study.active:
+            self.study.stop()
+            notes.append("The app ended the study session. React in one sentence.")
+            changed = True
+        gc = extras.parse_game_command(text)
+        if gc and gc[0] == "start" and not self.game.active:
+            _, g, topic = gc
+            if g is None:
+                notes.append("They want to play a game. Offer trivia, 20 questions or would you rather, and ask which.")
+            elif self.study.active and self.study.phase == "focus":
+                notes.append("They asked for a game, but they are in a study focus block, so the app did NOT start it. "
+                             "Tell them to wait for the break.")
+            else:
+                self.game.start(g, topic)
+                notes.append(f"The app started the game {extras.GAMES[g]}. Explain it in one sentence and begin.")
+                changed = True
+        elif gc and gc[0] == "stop" and self.game.active:
+            self.game.stop()
+            notes.append("The app ended the game. Say goodbye to the game in one sentence.")
+            changed = True
+        elif self.game.active and not gc:
+            res = self.game.user_turn(text)
+            if res == "won":
+                notes.append(f"They guessed it: it was {self.game.secret}. Congratulate them; the game is over.")
+            elif res == "gave_up":
+                notes.append(f"They gave up. Tell them it was {self.game.secret}; the game is over.")
+            elif res == "out":
+                notes.append(f"That was their 20th question and they did not get it. Tell them it was {self.game.secret}; "
+                             "the game is over.")
+            if res:
+                self.game.stop()
+            changed = True
+        if changed:
+            self._emit_extras()
+
+    def queue_event(self, instruction, urgent=False):
+        """Something the app wants it to say (timer done...). Spoken as soon as it is not busy.
+        Urgent ones (timers, reminders) are spoken during night hours too; the rest are dropped then."""
+        self._events.append((instruction, urgent))
+
+    async def _speak_event(self, instruction):
+        if self.sm.state == State.DISCONNECTED:
+            return False
+        if self._busy or self.sm.state not in (State.SLEEPING, State.LISTENING):
+            return False
+        if self.sm.state == State.SLEEPING:
+            self.wake("event")
+        self._busy = True
+        try:
+            await self._turn("(App event, not something they said) " + instruction, source="event")
+        finally:
+            self._busy = False
+        return True
+
+    async def _tick_extras(self):
+        changed = False
+        for t in self.timers.due():
+            what = f"'{t['label']}'" if t["label"] else f"{extras.fmt_duration(t['due'] - t['created'])}"
+            if t["kind"] == "reminder":
+                self.queue_event(f"Reminder time: remind them to {t['label'] or 'do the thing they asked'}. One or two sentences, in character.", True)
+            else:
+                self.queue_event(f"Their {what} timer just finished. Tell them in one or two sentences, in character.", True)
+            self.emit({"type": "toast", "message": f"{t['kind'].capitalize()} done: {t['label'] or what}"})
+            changed = True
+        ph = self.study.tick()
+        if ph == "break":
+            q = self.settings["study_quiz"]
+            subj = self.study.subject
+            msg = (f"Their {self.study.focus_min} minute focus block is over. Tell them to take a "
+                   f"{self.study.break_min} minute break.")
+            if q:
+                msg += (f" Then ask them ONE short quiz question" + (f" about {subj}" if subj else " about what they studied")
+                        + " with a single clear answer.")
+                self.study.quiz_question_pending = True
+            self.queue_event(msg)
+            changed = True
+        elif ph == "focus":
+            self.queue_event(f"The break is over. Tell them to start focus block {self.study.cycle} now, in one sentence.")
+            changed = True
+        night = bool(self.settings["night_sleep"]) and extras.in_window(
+            self._now_local(), self.settings["night_start"], self.settings["night_end"])
+        if night != self._night:
+            self._night = night
+            changed = True
+            if night:
+                if self.sm.state in (State.LISTENING, State.INTERRUPTED, State.WAKING) and not self._busy:
+                    self.sleep()
+                self.emit({"type": "toast", "message": "Night hours: asleep until " + self.settings["night_end"]
+                           + ". The button, hotkey or typing still wake it."})
+        if self._night:
+            keep = [e for e in self._events if e[1]]
+            self._events.clear()
+            self._events.extend(keep)
+        if self._events:
+            if await self._speak_event(self._events[0][0]):
+                self._events.popleft()
+        if changed:
+            self._emit_extras()
+
+    # ---------- music reactions (music.py calls this on the loop)
+    def _look(self, cols):
+        self.music["look"] = cols
+        if hasattr(self.dev, "set_look"):
+            self.dev.set_look(cols)
+        self.emit({"type": "look", "cols": cols})
+
+    def _music_idle(self):
+        return not self._busy and self.sm.state in (State.SLEEPING, State.LISTENING) and not self._night
+
+    def music_event(self, ev, level=0.0):
+        kind = ev[0]
+        self.music["level"] = round(level, 2)
+        if kind == "start":
+            self.music["on"] = True
+            if self._music_idle():
+                self.dev.set_power(True)
+                self._face("happy")
+            self._emit_extras()
+        elif kind == "stop":
+            self.music["on"] = False
+            self._look(0)
+            if self._music_idle():
+                self._mouth("closed")
+                self._face(self.state_face[self.sm.state])
+                self.dev.set_power(self.sm.state not in (State.SLEEPING, State.DISCONNECTED))
+            self._emit_extras()
+        elif kind == "beat" and self.music["on"] and self._music_idle():
+            side = -1 if self.music.get("look", 0) > 0 else 1
+            self._look(side * (2 if ev[1] < 0.5 else 3))
+            self._mouth("oh" if ev[1] > 0.4 else "ah")
+            if self._loop:
+                self._loop.call_later(0.12, lambda: self._music_idle() and self._mouth("closed"))

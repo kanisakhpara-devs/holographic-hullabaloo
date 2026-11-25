@@ -13,6 +13,17 @@ talks back with Kokoro, and tells the device which face and mouth shape to show.
 Whisper, Kokoro and wake word models download on first use into %APPDATA%\HolographicHullabaloo.
 Settings, memory and logs live there too, not in the repo.
 
+## Routines (added Nov 25)
+- **Timers and reminders**: say "set a timer for 10 minutes", "remind me at 5 pm to start physics", "what timers do I
+  have", "cancel the pasta timer", or use + Timer on Home. Saved in the database, so they survive a restart.
+- **Study buddy**: "let's study chemistry for 30 minutes" or Study on Home. Focus blocks and breaks, a quiz question
+  each break, and it nags you back to work if you chat during focus.
+- **Games**: "let's play trivia (about space)", "20 questions", "would you rather"; "stop the game" ends it.
+- **Night hours**, **proximity greetings** and **music reactions** (bobs to what the laptop plays, needs `soundcard`):
+  Settings, Routines. **Device health** (battery, spin speed, link): Settings, Health.
+- Personas now carry their own examples and voice (`voice:` / `speed:` lines and an `Examples:` block in the .txt).
+- Code: `companion/extras.py`, `companion/music.py`, `ui/js/extras.js`; tests in `tests/test_extras.py`.
+
 ## Folders
 - `companion/` Python backend (FastAPI + WebSocket). `server.py` is the entry point.
 - `ui/` the browser UI (plain HTML, CSS, JS). `ui/assets/face/face_sheet.png` is the pixel face.

@@ -110,6 +110,13 @@ def _emotion_map(v):
     return dict(v)
 
 
+def _hhmm(v):
+    v = _text(5)(v)
+    if not re.fullmatch(r"([01]?\d|2[0-3]):[0-5]\d", v):
+        raise Bad("time like 23:00")
+    return v
+
+
 def _persona(v):
     v = _text(40, r"[a-z0-9_]+")(v)
     if not v:
@@ -165,6 +172,17 @@ SCHEMA = {
     "ui_theme":              ("classic", _choice("classic", "glass"), True, "Classic sage cards, or liquid glass."),
     "ui_animations":         (True, _bool, True, "Background waves and other animations (ignores the Windows animation setting)."),
     "ui_scale":              (1.0, _num(0.8, 1.5), True, "Text and bubble size; the layout reflows."),
+    # routines (Nov 25)
+    "proximity_greet":       (False, _bool, True, "Say hello (in character) when someone comes near, instead of just waking up."),
+    "greet_cooldown_min":    (10, _num(1, 120, int), True, "Minutes before it greets again."),
+    "night_sleep":           (False, _bool, True, "Sleep during night hours. Proximity and the wake word are ignored then; the button, hotkey and typing still work, and timers still ring."),
+    "night_start":           ("23:00", _hhmm, True, "When night hours start."),
+    "night_end":             ("07:00", _hhmm, True, "When night hours end."),
+    "study_focus_min":       (25, _num(5, 120, int), True, "Focus block length for study sessions (pomodoro)."),
+    "study_break_min":       (5, _num(1, 30, int), True, "Break length between focus blocks."),
+    "study_quiz":            (True, _bool, True, "Ask one quiz question at the start of each break."),
+    "music_react":           (False, _bool, True, "Bob along to music playing on this computer while idle (listens to the speaker output, not the mic)."),
+    "music_sensitivity":     (0.5, _num(0.0, 1.0), True, "Higher reacts to quieter music and smaller beats."),
 }
 DEFAULTS = {k: v[0] for k, v in SCHEMA.items()}
 NEEDS_RELOAD = {"stt_model": "speech recognizer", "stt_device": "speech recognizer", "tts_device": "voice"}

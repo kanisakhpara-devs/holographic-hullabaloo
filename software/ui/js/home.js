@@ -49,6 +49,7 @@ function renderHome(L, P) {
      <div class="mic seg" id="mic" role="radiogroup" aria-label="Microphone">${[["off", "mic off"], ["hotkey", "hotkey"], ["wake", "hotkey + wake word"]].map(([v, l]) => `<button role="radio" data-m="${v}" onclick="setMic('${v}')">${l}</button>`).join("")}</div>
      <div id="lvl" aria-hidden="true"><i></i></div></div>
     <div id="hint"></div>
+    <div id="acts" class="acts" aria-label="Timers, study and games"></div>
     <div id="cap" class="scroll" aria-live="polite" onscroll="capScrolled()"></div>
     <div id="boot"><div class="dots"><span></span><span></span><span></span></div><div class="bar"></div></div>
     <div class="row talkbar"><input id="tx" aria-label="Type to talk" placeholder="Type to talk" onkeydown="if(event.key==='Enter')sendText()">
@@ -56,7 +57,7 @@ function renderHome(L, P) {
      <button class="pill talk" id="ptt" aria-label="Hold to talk">Hold to talk</button></div>
    </div>`;
   wirePTT();
-  drawFace(); renderCaptions(true); paintState(); paintLevel(); paintMic();
+  drawFace(); renderCaptions(true); paintState(); paintLevel(); paintMic(); if (window.paintActs) paintActs();
 }
 
 /* hold to talk: pointer or keyboard (Space/Enter) held */
@@ -75,7 +76,8 @@ function sendText() { const i = $("#tx"); if (!i || !i.value.trim()) return; sen
 function drawFace() {
   const c = $("#face"); if (!c || typeof Face === "undefined") return;
   Face.draw(c, { emotion: S.face, mouth: S.mouth, state: S.state, booting: S.booting });
-  const h = $("#head"); if (h) h.classList.toggle("off", S.state === "sleeping" || S.state === "disconnected" || S.booting);
+  const h = $("#head"); if (h) h.classList.toggle("off", (S.state === "sleeping" && !(S.extras && S.extras.music && S.extras.music.on)) || S.state === "disconnected" || S.booting);
+  if (window.paintLook) paintLook();
 }
 function drawHead() { drawFace(); }
 
